@@ -1,0 +1,159 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organism {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  snornas     SnoRna[]
+  rrnaUnits   RrnaUnit[]
+  articles    Article[]
+  tools       Tool[]
+  libraries   SequencingLibrary[]
+  assets      Asset[]
+}
+
+model SnoRna {
+  id                  String             @id @default(uuid())
+  organismId          String
+  snornaId            String
+  sequence            String
+  length              Int
+  type                String
+  homologSnoRnaId     String?
+  tritrypdbExternalId String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  organism            Organism           @relation(fields: [organismId], references: [id], onDelete: Cascade)
+  genomicLocations    GenomicLocation[]
+  targets             SnoRnaTarget[]
+  modificationSites   ModificationSite[]
+  assets              Asset[]
+
+  @@unique([organismId, snornaId])
+  @@index([snornaId])
+}
+
+model GenomicLocation {
+  id       String @id @default(uuid())
+  snoRnaId String
+  chr      String
+  start    Int
+  end      Int
+  strand   String
+  snoRna   SnoRna @relation(fields: [snoRnaId], references: [id], onDelete: Cascade)
+
+  @@index([chr, start, end])
+}
+
+model SnoRnaTarget {
+  id              String  @id @default(uuid())
+  snoRnaId        String
+  targetSequence1 String?
+  targetSequence2 String?
+  cBox            String?
+  cBox2           String?
+  dBox            String?
+  dBox2           String?
+  dBox3           String?
+  osLeft          String?
+  leftPocket      String?
+  innerStem       String?
+  rightPocket     String?
+  outerStemRight  String?
+  snoRna          SnoRna  @relation(fields: [snoRnaId], references: [id], onDelete: Cascade)
+}
+
+model RrnaUnit {
+  id         String   @id @default(uuid())
+  organismId String
+  subunit    String
+  start      Int
+  end        Int
+  sequence   String?
+  createdAt  DateTime @default(now())
+  organism   Organism @relation(fields: [organismId], references: [id], onDelete: Cascade)
+  sites      ModificationSite[]
+  assets     Asset[]
+
+  @@unique([organismId, subunit])
+}
+
+model ModificationSite {
+  id          String   @id @default(uuid())
+  snoRnaId    String
+  rrnaUnitId  String?
+  source      String
+  rrnaSubunit String
+  position    Int
+  count       Int
+  bp          String?
+  base        String?
+  modType     String?
+  snoRna      SnoRna   @relation(fields: [snoRnaId], references: [id], onDelete: Cascade)
+  rrnaUnit    RrnaUnit? @relation(fields: [rrnaUnitId], references: [id], onDelete: SetNull)
+
+  @@index([rrnaSubunit, count])
+}
+
+model Article {
+  id              String   @id @default(uuid())
+  organismId      String
+  pmid            String?
+  title           String
+  authors         String?
+  citation        String?
+  firstAuthor     String?
+  journalBook     String?
+  publicationYear Int?
+  pmcid           String?
+  nihmsId         String?
+  doi             String?
+  externalUrl     String?
+  organism        Organism @relation(fields: [organismId], references: [id], onDelete: Cascade)
+}
+
+model Tool {
+  id          String   @id @default(uuid())
+  organismId  String?
+  name        String
+  slug        String   @unique
+  description String?
+  externalUrl String?
+  organism    Organism? @relation(fields: [organismId], references: [id], onDelete: SetNull)
+}
+
+model SequencingLibrary {
+  id          String   @id @default(uuid())
+  organismId  String
+  name        String
+  description String?
+  externalUrl String?
+  downloadUrl String?
+  organism    Organism @relation(fields: [organismId], references: [id], onDelete: Cascade)
+}
+
+model Asset {
+  id         String   @id @default(uuid())
+  organismId String?
+  snoRnaId   String?
+  rrnaUnitId String?
+  category   String
+  title      String
+  path       String
+  format     String
+  pdbId      String?
+  organism   Organism? @relation(fields: [organismId], references: [id], onDelete: SetNull)
+  snoRna     SnoRna?   @relation(fields: [snoRnaId], references: [id], onDelete: SetNull)
+  rrnaUnit   RrnaUnit? @relation(fields: [rrnaUnitId], references: [id], onDelete: SetNull)
+}
