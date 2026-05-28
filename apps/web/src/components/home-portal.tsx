@@ -43,7 +43,12 @@ export function HomePortal() {
         <article className="rounded-2xl border border-violet-200 bg-white p-5 shadow-sm">
           <h2 className="mb-4 rounded-lg bg-violet-100 px-3 py-2 text-xl font-semibold text-violet-900">Tools</h2>
           <div className="space-y-2">
-            <Link className="block rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 transition hover:bg-violet-100" href="/tools/genome-browser">
+            <Link
+              className="block rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 transition hover:bg-violet-100"
+              href="https://tritrypdb.org/tritrypdb/app/jbrowse?loc=Tb927_02_v5.1%3A91072..1046230&data=%2Ftritrypdb%2Fservice%2Fjbrowse%2Ftracks%2FtbruTREU927&tracks=gene%2CCommunity%20annotations%20from%20Apollo%2CTbruceiTREU927%20combined%20RNAseq%20plot&highlight=Tb927_10_v5.1%3A508643..511018"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               Genome Browser
             </Link>
             <Link className="block rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 transition hover:bg-violet-100" href="/tools/blast">

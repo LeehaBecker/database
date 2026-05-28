@@ -4,6 +4,13 @@ import { snornaFilterSchema } from "../lib/schemas.js";
 
 export const snornaRouter = Router();
 
+function parseCsvIds(value: string | null | undefined): string[] {
+  return String(value ?? "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item, index, arr) => item.length > 0 && arr.indexOf(item) === index);
+}
+
 snornaRouter.get("/", async (req, res) => {
   const parsed = snornaFilterSchema.safeParse(req.query);
   if (!parsed.success) {
@@ -83,5 +90,13 @@ snornaRouter.get("/:id", async (req, res) => {
       rrnaUnitLabel: site.rrnaSubunit || site.rrnaUnit?.subunit || "Not Known",
     }));
 
-  res.json({ ...item, modificationSites: filteredModificationSites, highlightFragments });
+  res.json({
+    ...item,
+    referenceUrl: item.referenceUrl ?? null,
+    lmHomologIds: parseCsvIds(item.lmHomologIds),
+    tbHomologIds: parseCsvIds(item.tbHomologIds),
+    ldHomologIds: parseCsvIds(item.ldHomologIds),
+    modificationSites: filteredModificationSites,
+    highlightFragments,
+  });
 });

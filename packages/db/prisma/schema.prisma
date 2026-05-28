@@ -30,6 +30,10 @@ model SnoRna {
   sequence            String
   length              Int
   type                String
+  referenceUrl        String?
+  lmHomologIds        String?
+  tbHomologIds        String?
+  ldHomologIds        String?
   homologSnoRnaId     String?
   tritrypdbExternalId String?
   createdAt           DateTime           @default(now())

@@ -26,6 +26,14 @@ function readXlsx(fileName: string): Record<string, unknown>[] {
   >[];
 }
 
+function readXlsxSheet(fileName: string, sheetName: string): Record<string, unknown>[] {
+  const filePath = path.join(ROOT_DATA, fileName);
+  if (!fs.existsSync(filePath)) return [];
+  const wb = xlsx.readFile(filePath);
+  if (!wb.Sheets[sheetName]) return [];
+  return xlsx.utils.sheet_to_json(wb.Sheets[sheetName], { defval: "" }) as Record<string, unknown>[];
+}
+
 function pick(row: Record<string, unknown>, ...keys: string[]) {
   for (const key of keys) {
     const match = Object.keys(row).find((k) => k.trim().replace(/^\uFEFF/, "") === key);
@@ -46,6 +54,57 @@ function readFastaSequence(fileName: string): string {
   return lines.join("").trim().toUpperCase();
 }
 
+function readFastaEntries(fileName: string): Array<{ header: string; sequence: string }> {
+  const filePath = path.join(ROOT_DATA, fileName);
+  if (!fs.existsSync(filePath)) return [];
+  const lines = fs.readFileSync(filePath, "utf8").split(/\r?\n/);
+  const entries: Array<{ header: string; sequence: string }> = [];
+  let currentHeader = "";
+  let currentSequence: string[] = [];
+
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    if (line.startsWith(">")) {
+      if (currentHeader) {
+        entries.push({
+          header: currentHeader,
+          sequence: currentSequence.join("").trim().toUpperCase(),
+        });
+      }
+      currentHeader = line.replace(/^>/, "").trim();
+      currentSequence = [];
+      continue;
+    }
+    currentSequence.push(line.trim());
+  }
+
+  if (currentHeader) {
+    entries.push({
+      header: currentHeader,
+      sequence: currentSequence.join("").trim().toUpperCase(),
+    });
+  }
+
+  return entries.filter((entry) => entry.sequence.length > 0);
+}
+
+function readRowsByExtension(baseFileNameWithoutExt: string): Record<string, unknown>[] {
+  const csvFile = `${baseFileNameWithoutExt}.csv`;
+  const xlsxFile = `${baseFileNameWithoutExt}.xlsx`;
+  const csvPath = path.join(ROOT_DATA, csvFile);
+  const xlsxPath = path.join(ROOT_DATA, xlsxFile);
+  if (fs.existsSync(csvPath)) return readCsv(csvFile);
+  if (fs.existsSync(xlsxPath)) return readXlsx(xlsxFile);
+  return [];
+}
+
+function normalizeCsvList(value: string): string[] {
+  return value
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part, index, arr) => part.length > 0 && arr.indexOf(part) === index);
+}
+
 async function main() {
   const organism = await prisma.organism.findUnique({ where: { slug: "trypanosoma-brucei" } });
   if (!organism) throw new Error("Missing organism seed");
@@ -60,12 +119,20 @@ async function main() {
   for (const row of readCsv("all_snoRNA_table.csv")) {
     const snornaId = pick(row, "snoRNA_ID");
     if (!snornaId) continue;
+    const referenceUrl = pick(row, "reference", "Reference") || null;
+    const lmHomologIds = normalizeCsvList(pick(row, "LM Homolog")).join(",") || null;
+    const primaryHomolog = lmHomologIds?.split(",")[0] || null;
     await prisma.snoRna.upsert({
       where: { organismId_snornaId: { organismId: organism.id, snornaId } },
       update: {
         sequence: pick(row, "Sequence"),
         length: Number(pick(row, "Length") || 0),
         type: pick(row, "Type"),
+        referenceUrl,
+        lmHomologIds,
+        tbHomologIds: null,
+        ldHomologIds: null,
+        homologSnoRnaId: primaryHomolog,
       },
       create: {
         organismId: organism.id,
@@ -73,6 +140,11 @@ async function main() {
         sequence: pick(row, "Sequence"),
         length: Number(pick(row, "Length") || 0),
         type: pick(row, "Type"),
+        referenceUrl,
+        lmHomologIds,
+        tbHomologIds: null,
+        ldHomologIds: null,
+        homologSnoRnaId: primaryHomolog,
       },
     });
   }
@@ -259,6 +331,159 @@ async function main() {
         format: "pdf",
       },
     });
+  }
+
+  const lmOrganism = await prisma.organism.findUnique({ where: { slug: "leishmania-major" } });
+  if (!lmOrganism) throw new Error("Missing Leishmania major organism seed");
+
+  await prisma.genomicLocation.deleteMany({ where: { snoRna: { organismId: lmOrganism.id } } });
+  await prisma.snoRnaTarget.deleteMany({ where: { snoRna: { organismId: lmOrganism.id } } });
+  await prisma.modificationSite.deleteMany({ where: { snoRna: { organismId: lmOrganism.id } } });
+  await prisma.article.deleteMany({ where: { organismId: lmOrganism.id } });
+  await prisma.rrnaUnit.deleteMany({ where: { organismId: lmOrganism.id } });
+  await prisma.asset.deleteMany({ where: { organismId: lmOrganism.id } });
+  await prisma.snoRna.deleteMany({ where: { organismId: lmOrganism.id } });
+
+  for (const row of readCsv("all_LM_snoRNA_table.csv")) {
+    const snornaId = pick(row, "snoRNA_ID");
+    if (!snornaId) continue;
+    const referenceUrl = pick(row, "reference", "Reference") || null;
+    const tbHomologIds = normalizeCsvList(pick(row, "TB Homolog", "TB homolog")).join(",") || null;
+    const ldHomologIds = normalizeCsvList(pick(row, "LD Homolog", "LD homolog")).join(",") || null;
+    const primaryHomolog = tbHomologIds?.split(",")[0] || null;
+    await prisma.snoRna.create({
+      data: {
+        organismId: lmOrganism.id,
+        snornaId,
+        sequence: pick(row, "Sequence"),
+        length: Number(pick(row, "Length") || 0),
+        type: pick(row, "Type"),
+        referenceUrl,
+        lmHomologIds: null,
+        tbHomologIds,
+        ldHomologIds,
+        homologSnoRnaId: primaryHomolog,
+      },
+    });
+  }
+
+  for (const row of readXlsx("chr_locations_LM.xlsx")) {
+    const snornaId = pick(row, "snoRNA_ID");
+    if (!snornaId) continue;
+    const sno = await prisma.snoRna.findUnique({
+      where: { organismId_snornaId: { organismId: lmOrganism.id, snornaId } },
+    });
+    if (!sno) continue;
+    await prisma.genomicLocation.create({
+      data: {
+        snoRnaId: sno.id,
+        chr: pick(row, "chr"),
+        start: Number(pick(row, "start") || 0),
+        end: Number(pick(row, "end") || 0),
+        strand: pick(row, "strand"),
+      },
+    });
+  }
+
+  for (const row of readCsv("snoRNA_LM_targets.csv")) {
+    const snornaId = pick(row, "snoRNA_ID");
+    if (!snornaId) continue;
+    const sno = await prisma.snoRna.findUnique({
+      where: { organismId_snornaId: { organismId: lmOrganism.id, snornaId } },
+    });
+    if (!sno) continue;
+    await prisma.snoRnaTarget.create({
+      data: {
+        snoRnaId: sno.id,
+        targetSequence1: pick(row, "Target Sequence 1") || null,
+        targetSequence2: pick(row, "Target Sequence 2") || null,
+        cBox: pick(row, "C box") || null,
+        cBox2: pick(row, "C box 2") || null,
+        dBox: pick(row, "D box") || null,
+        dBox2: pick(row, "D box 2") || null,
+        dBox3: pick(row, "D box 3") || null,
+      },
+    });
+  }
+
+  for (const row of readXlsxSheet("TB_LM_HACA_IN_PARTS_02Oct2014.xlsx", "LM")) {
+    const snornaId = pick(row, "snoRNA_ID");
+    if (!snornaId) continue;
+    const sno = await prisma.snoRna.findUnique({
+      where: { organismId_snornaId: { organismId: lmOrganism.id, snornaId } },
+    });
+    if (!sno) continue;
+    await prisma.snoRnaTarget.create({
+      data: {
+        snoRnaId: sno.id,
+        osLeft: pick(row, "OS_LEFT") || null,
+        leftPocket: pick(row, "LEFT_POCKET") || null,
+        innerStem: pick(row, "INNER_STEM") || null,
+        rightPocket: pick(row, "RIGHT_POCKET") || null,
+        outerStemRight: pick(row, "OUTTER_STEM_RIGHT") || null,
+      },
+    });
+  }
+
+  const lmUnits = readFastaEntries("LM_rRNA_10Oct2012.fa");
+  let coordinateStart = 1;
+  for (const unit of lmUnits) {
+    const subunit = unit.header.split(/\s+/)[0]?.trim() || `subunit_${coordinateStart}`;
+    const start = coordinateStart;
+    const end = start + unit.sequence.length - 1;
+    await prisma.rrnaUnit.upsert({
+      where: { organismId_subunit: { organismId: lmOrganism.id, subunit } },
+      update: { start, end, sequence: unit.sequence },
+      create: {
+        organismId: lmOrganism.id,
+        subunit,
+        start,
+        end,
+        sequence: unit.sequence,
+      },
+    });
+    coordinateStart = end + 1;
+  }
+  if (lmUnits.length > 0) {
+    await prisma.asset.create({
+      data: {
+        organismId: lmOrganism.id,
+        category: "rrna_sequence",
+        title: "LM_rRNA_10Oct2012_split_sequence",
+        path: path.join(ROOT_DATA, "LM_rRNA_10Oct2012.fa"),
+        format: "fasta",
+      },
+    });
+  }
+
+  for (const [fileBase, source, modType] of [
+    ["LM_rRNA_annot_Nm", "Nm", "Nm"],
+    ["LM_rRNA_annot_Psi", "Psi", "Psi"],
+  ] as const) {
+    for (const row of readRowsByExtension(fileBase)) {
+      const snornaId = pick(row, "snoRNA_ID");
+      if (!snornaId) continue;
+      const sno = await prisma.snoRna.findUnique({
+        where: { organismId_snornaId: { organismId: lmOrganism.id, snornaId } },
+      });
+      if (!sno) continue;
+      const rrnaSubunit = pick(row, "rRNA_unit", "rRNA subunit");
+      const rrnaUnit = await prisma.rrnaUnit.findFirst({
+        where: { organismId: lmOrganism.id, subunit: rrnaSubunit },
+      });
+      await prisma.modificationSite.create({
+        data: {
+          snoRnaId: sno.id,
+          rrnaUnitId: rrnaUnit?.id ?? null,
+          source,
+          rrnaSubunit,
+          position: Number(pick(row, "position") || 0),
+          count: Number(pick(row, "count") || 0),
+          bp: pick(row, "BP") || null,
+          modType,
+        },
+      });
+    }
   }
 }
 

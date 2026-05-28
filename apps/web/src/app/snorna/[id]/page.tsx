@@ -8,6 +8,11 @@ type SnornaDetail = {
   type: string;
   length: number;
   sequence: string;
+  organism: { slug: string };
+  referenceUrl?: string | null;
+  lmHomologIds?: string[];
+  tbHomologIds?: string[];
+  ldHomologIds?: string[];
   genomicLocations: Array<{ chr: string; start: number; end: number; strand: string }>;
   modificationSites: Array<{ rrnaSubunit: string; rrnaUnitLabel?: string; count: number; bp: string | null }>;
   targets: Array<{
@@ -22,6 +27,7 @@ type SnornaDetail = {
 export default async function SnornaDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const item = await apiFetch<SnornaDetail>(`/snorna/${id}`);
+  const backToTableHref = `/organisms/${item.organism?.slug ?? "trypanosoma-brucei"}/snorna`;
   const displaySequence = (item.sequence ?? "").replaceAll("T", "U").replaceAll("t", "u");
   const fasta = `>${item.snornaId}\n${displaySequence}`;
   const fastaHref = `data:text/plain;charset=utf-8,${encodeURIComponent(fasta)}`;
@@ -29,7 +35,7 @@ export default async function SnornaDetailPage({ params }: { params: Promise<{ i
   return (
     <main className="mx-auto max-w-6xl p-6 space-y-4">
       <header className="flex items-center justify-between">
-        <Link href="/organisms/trypanosoma-brucei/snorna" className="text-sm underline">
+        <Link href={backToTableHref} className="text-sm underline">
           Back to table
         </Link>
         <a href="https://tritrypdb.org" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm underline">
@@ -97,8 +103,70 @@ export default async function SnornaDetailPage({ params }: { params: Promise<{ i
         </table>
       </section>
 
-      <section className="rounded-xl border bg-white p-4">No secondary structure available</section>
-      <section className="rounded-xl border bg-white p-4">No homolog available</section>
+      <section className="rounded-xl border bg-white p-4">
+        <h2 className="mb-2 font-semibold">Homolog</h2>
+        {!!item.lmHomologIds?.length && (
+          <div className="mb-3">
+            <p className="mb-1 text-sm font-medium text-slate-700">LM homologs</p>
+            <div className="flex flex-wrap gap-2">
+              {item.lmHomologIds.map((homologId) => (
+                <Link
+                  key={homologId}
+                  href={`/snorna/${homologId}`}
+                  className="rounded border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs text-emerald-900 underline"
+                >
+                  {homologId}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+        {!!item.tbHomologIds?.length && (
+          <div className="mb-3">
+            <p className="mb-1 text-sm font-medium text-slate-700">TB homologs</p>
+            <div className="flex flex-wrap gap-2">
+              {item.tbHomologIds.map((homologId) => (
+                <Link
+                  key={homologId}
+                  href={`/snorna/${homologId}`}
+                  className="rounded border border-cyan-200 bg-cyan-50 px-2 py-1 text-xs text-cyan-900 underline"
+                >
+                  {homologId}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+        {!!item.ldHomologIds?.length && (
+          <div>
+            <p className="mb-1 text-sm font-medium text-slate-700">LD homologs</p>
+            <div className="flex flex-wrap gap-2">
+              {item.ldHomologIds.map((homologId) => (
+                <span key={homologId} className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700">
+                  {homologId}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+        {!item.lmHomologIds?.length && !item.tbHomologIds?.length && !item.ldHomologIds?.length && (
+          <p className="text-sm text-slate-500">No homolog available</p>
+        )}
+      </section>
+      <section className="rounded-xl border bg-white p-4">
+        <h2 className="mb-2 font-semibold">Reference</h2>
+        {item.referenceUrl ? (
+          <a href={item.referenceUrl} target="_blank" rel="noreferrer" className="text-sm text-blue-700 underline break-all">
+            {item.referenceUrl}
+          </a>
+        ) : (
+          <p className="text-sm text-slate-500">No reference available</p>
+        )}
+      </section>
+      <section className="rounded-xl border bg-white p-4">
+        <h2 className="mb-2 font-semibold">Secondary Structure</h2>
+        <p className="text-sm text-slate-500">No secondary structure available</p>
+      </section>
     </main>
   );
 }

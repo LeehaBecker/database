@@ -28,7 +28,9 @@ rrnaRouter.get("/", async (req, res) => {
     ...asset,
     publicUrl: `/rrna/secondary-structure/${path.basename(asset.path)}`,
   }));
-  res.json({ organism, units, assets: assetsWithUrls, rrnaSequence, structure3dUrl: "/rrna/3d/cif" });
+  const structure3dUrl = species === "leishmania-major" ? null : "/rrna/3d/cif";
+  const structure3dExternalUrl = species === "leishmania-major" ? "https://www.rcsb.org/3d-view/9FXO" : null;
+  res.json({ organism, units, assets: assetsWithUrls, rrnaSequence, structure3dUrl, structure3dExternalUrl });
 });
 
 rrnaRouter.get("/modifications", async (_req, res) => {
