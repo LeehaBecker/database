@@ -17,7 +17,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ fi
   return new Response(arrayBuffer, {
     status: 200,
     headers: {
-      "content-type": response.headers.get("content-type") ?? "application/pdf",
+      "content-type": response.headers.get("content-type") ?? "application/octet-stream",
       "cache-control": "public, max-age=60",
     },
   });

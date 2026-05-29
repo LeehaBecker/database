@@ -16,6 +16,21 @@ function readCsv(fileName: string): Record<string, unknown>[] {
   });
 }
 
+function readCsvColumns(fileName: string): string[] {
+  const filePath = path.join(ROOT_DATA, fileName);
+  if (!fs.existsSync(filePath)) return [];
+  const rows = parse(fs.readFileSync(filePath, "utf8"), {
+    columns: false,
+    skip_empty_lines: true,
+    trim: true,
+    to_line: 1,
+  }) as unknown[][];
+  if (!rows.length) return [];
+  return rows[0]
+    .map((value) => String(value ?? "").trim().replace(/^\uFEFF/, ""))
+    .filter((value, index, arr) => value.length > 0 && arr.indexOf(value) === index);
+}
+
 function readXlsx(fileName: string): Record<string, unknown>[] {
   const filePath = path.join(ROOT_DATA, fileName);
   if (!fs.existsSync(filePath)) return [];
@@ -105,6 +120,51 @@ function normalizeCsvList(value: string): string[] {
     .filter((part, index, arr) => part.length > 0 && arr.indexOf(part) === index);
 }
 
+function normalizeRowForJson(row: Record<string, unknown>): Record<string, string> {
+  const normalized: Record<string, string> = {};
+  for (const [rawKey, rawValue] of Object.entries(row)) {
+    const key = rawKey.trim().replace(/^\uFEFF/, "");
+    if (!key) continue;
+    normalized[key] = String(rawValue ?? "").trim();
+  }
+  return normalized;
+}
+
+async function importChimeraMrnaRows(organismId: string, fileName: string) {
+  const columns = readCsvColumns(fileName);
+  const rows = readCsv(fileName);
+
+  await prisma.chimeraDatasetMeta.upsert({
+    where: {
+      organismId_datasetKey: {
+        organismId,
+        datasetKey: "snorna-mrna",
+      },
+    },
+    update: {
+      columns,
+      sourceFile: fileName,
+    },
+    create: {
+      organismId,
+      datasetKey: "snorna-mrna",
+      columns,
+      sourceFile: fileName,
+    },
+  });
+
+  await prisma.chimeraMrnaEntry.deleteMany({ where: { organismId } });
+  if (!rows.length) return;
+
+  await prisma.chimeraMrnaEntry.createMany({
+    data: rows.map((row, index) => ({
+      organismId,
+      rowOrder: index,
+      rowData: normalizeRowForJson(row),
+    })),
+  });
+}
+
 async function main() {
   const organism = await prisma.organism.findUnique({ where: { slug: "trypanosoma-brucei" } });
   if (!organism) throw new Error("Missing organism seed");
@@ -115,6 +175,8 @@ async function main() {
   await prisma.article.deleteMany({ where: { organismId: organism.id } });
   await prisma.rrnaUnit.deleteMany({ where: { organismId: organism.id } });
   await prisma.asset.deleteMany({ where: { organismId: organism.id } });
+  await prisma.chimeraDatasetMeta.deleteMany({ where: { organismId: organism.id } });
+  await prisma.chimeraMrnaEntry.deleteMany({ where: { organismId: organism.id } });
 
   for (const row of readCsv("all_snoRNA_table.csv")) {
     const snornaId = pick(row, "snoRNA_ID");
@@ -333,6 +395,8 @@ async function main() {
     });
   }
 
+  await importChimeraMrnaRows(organism.id, "Chimera_TB_snoRNAs_w_mRNA.csv");
+
   const lmOrganism = await prisma.organism.findUnique({ where: { slug: "leishmania-major" } });
   if (!lmOrganism) throw new Error("Missing Leishmania major organism seed");
 
@@ -342,6 +406,8 @@ async function main() {
   await prisma.article.deleteMany({ where: { organismId: lmOrganism.id } });
   await prisma.rrnaUnit.deleteMany({ where: { organismId: lmOrganism.id } });
   await prisma.asset.deleteMany({ where: { organismId: lmOrganism.id } });
+  await prisma.chimeraDatasetMeta.deleteMany({ where: { organismId: lmOrganism.id } });
+  await prisma.chimeraMrnaEntry.deleteMany({ where: { organismId: lmOrganism.id } });
   await prisma.snoRna.deleteMany({ where: { organismId: lmOrganism.id } });
 
   for (const row of readCsv("all_LM_snoRNA_table.csv")) {
@@ -485,6 +551,8 @@ async function main() {
       });
     }
   }
+
+  await importChimeraMrnaRows(lmOrganism.id, "Chimera_LM_snoRNAs_w_mRNA.csv");
 }
 
 main()

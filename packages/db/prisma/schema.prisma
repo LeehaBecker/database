@@ -9,18 +9,20 @@ datasource db {
 }
 
 model Organism {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  slug        String   @unique
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  snornas     SnoRna[]
-  rrnaUnits   RrnaUnit[]
-  articles    Article[]
-  tools       Tool[]
-  libraries   SequencingLibrary[]
-  assets      Asset[]
+  id                  String              @id @default(uuid())
+  name                String              @unique
+  slug                String              @unique
+  description         String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  snornas             SnoRna[]
+  rrnaUnits           RrnaUnit[]
+  articles            Article[]
+  tools               Tool[]
+  libraries           SequencingLibrary[]
+  assets              Asset[]
+  chimeraMrnaEntries  ChimeraMrnaEntry[]
+  chimeraDatasetMetas ChimeraDatasetMeta[]
 }
 
 model SnoRna {
@@ -160,4 +162,29 @@ model Asset {
   organism   Organism? @relation(fields: [organismId], references: [id], onDelete: SetNull)
   snoRna     SnoRna?   @relation(fields: [snoRnaId], references: [id], onDelete: SetNull)
   rrnaUnit   RrnaUnit? @relation(fields: [rrnaUnitId], references: [id], onDelete: SetNull)
+}
+
+model ChimeraMrnaEntry {
+  id         String   @id @default(uuid())
+  organismId String
+  rowOrder   Int
+  rowData    Json
+  createdAt  DateTime @default(now())
+
+  organism Organism @relation(fields: [organismId], references: [id], onDelete: Cascade)
+
+  @@index([organismId, rowOrder])
+}
+
+model ChimeraDatasetMeta {
+  id         String   @id @default(uuid())
+  organismId String
+  datasetKey String
+  sourceFile String?
+  columns    String[]
+  updatedAt  DateTime @updatedAt
+
+  organism Organism @relation(fields: [organismId], references: [id], onDelete: Cascade)
+
+  @@unique([organismId, datasetKey])
 }

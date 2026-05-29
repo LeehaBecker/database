@@ -40,6 +40,16 @@ export default async function OrganismLandingPage({ params }: { params: Promise<
             Explore sequence maps, modification sites, and related structure assets.
           </p>
         </Link>
+
+        <Link
+          href={`/organisms/${id}/chimera`}
+          className="rounded-2xl border border-sky-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:bg-sky-50"
+        >
+          <h2 className="text-xl font-semibold text-sky-900">Chimera Data</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            Browse Chimera, filter by columns, and export selected rows.
+          </p>
+        </Link>
       </section>
     </main>
   );
