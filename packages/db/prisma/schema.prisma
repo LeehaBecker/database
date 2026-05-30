@@ -23,6 +23,7 @@ model Organism {
   assets              Asset[]
   chimeraMrnaEntries  ChimeraMrnaEntry[]
   chimeraDatasetMetas ChimeraDatasetMeta[]
+  snornaClusterItems  SnornaClusterItem[]
 }
 
 model SnoRna {
@@ -187,4 +188,24 @@ model ChimeraDatasetMeta {
   organism Organism @relation(fields: [organismId], references: [id], onDelete: Cascade)
 
   @@unique([organismId, datasetKey])
+}
+
+model SnornaClusterItem {
+  id                    String   @id @default(uuid())
+  organismId            String
+  clusterId             Int
+  itemOrder             Int
+  coordinates           String?
+  snornaId              String
+  boxType               String?
+  geneLengthNt          Int?
+  intergenicLengthNt    String?
+  clusterRepeatInGenome Int?
+  referenceUrl          String?
+  createdAt             DateTime @default(now())
+
+  organism Organism @relation(fields: [organismId], references: [id], onDelete: Cascade)
+
+  @@index([organismId, clusterId, itemOrder])
+  @@index([organismId, snornaId])
 }

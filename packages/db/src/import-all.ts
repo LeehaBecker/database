@@ -1,8 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { parse } from "csv-parse/sync";
+import type { PrismaClient } from "@prisma/client";
 import xlsx from "xlsx";
 import { prisma } from "./client.js";
+
+const db = prisma as PrismaClient;
 
 const ROOT_DATA = process.env.DATA_PATH ?? "C:/Users/ALEXANDER/Desktop/transfer-snorna-extracted/Site-db-data";
 
@@ -134,7 +137,7 @@ async function importChimeraMrnaRows(organismId: string, fileName: string) {
   const columns = readCsvColumns(fileName);
   const rows = readCsv(fileName);
 
-  await prisma.chimeraDatasetMeta.upsert({
+  await db.chimeraDatasetMeta.upsert({
     where: {
       organismId_datasetKey: {
         organismId,
@@ -153,16 +156,55 @@ async function importChimeraMrnaRows(organismId: string, fileName: string) {
     },
   });
 
-  await prisma.chimeraMrnaEntry.deleteMany({ where: { organismId } });
+  await db.chimeraMrnaEntry.deleteMany({ where: { organismId } });
   if (!rows.length) return;
 
-  await prisma.chimeraMrnaEntry.createMany({
+  await db.chimeraMrnaEntry.createMany({
     data: rows.map((row, index) => ({
       organismId,
       rowOrder: index,
       rowData: normalizeRowForJson(row),
     })),
   });
+}
+
+async function importSnornaClusterRows(organismId: string, fileName: string) {
+  const rows = readRowsByExtension(fileName.replace(/\.(csv|xlsx)$/i, ""));
+  if (!rows.length) return;
+
+  let currentClusterId = Number.NaN;
+  let itemOrder = 0;
+  const data = rows
+    .map((row) => {
+      const clusterId = Number(pick(row, "Cluster_ID"));
+      const snornaId = pick(row, "snoRNA_ID");
+      if (!Number.isFinite(clusterId) || !snornaId) return null;
+      if (clusterId !== currentClusterId) {
+        currentClusterId = clusterId;
+        itemOrder = 0;
+      }
+
+      const clusterRepeatRaw = pick(row, "Number of times the cluster is repeated in the genome");
+      const geneLengthRaw = pick(row, "Gene length (nt)");
+      const entry = {
+        organismId,
+        clusterId,
+        itemOrder,
+        coordinates: pick(row, "Coordinates") || null,
+        snornaId,
+        boxType: pick(row, "Box") || null,
+        geneLengthNt: Number(geneLengthRaw) || null,
+        intergenicLengthNt: pick(row, " intergenic regions length (nt)", "intergenic regions length (nt)") || null,
+        clusterRepeatInGenome: Number(clusterRepeatRaw) || null,
+        referenceUrl: pick(row, "reference", "Reference") || null,
+      };
+      itemOrder += 1;
+      return entry;
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null);
+
+  if (!data.length) return;
+  await (db as any).snornaClusterItem.createMany({ data });
 }
 
 async function main() {
@@ -175,8 +217,9 @@ async function main() {
   await prisma.article.deleteMany({ where: { organismId: organism.id } });
   await prisma.rrnaUnit.deleteMany({ where: { organismId: organism.id } });
   await prisma.asset.deleteMany({ where: { organismId: organism.id } });
-  await prisma.chimeraDatasetMeta.deleteMany({ where: { organismId: organism.id } });
-  await prisma.chimeraMrnaEntry.deleteMany({ where: { organismId: organism.id } });
+  await db.chimeraDatasetMeta.deleteMany({ where: { organismId: organism.id } });
+  await db.chimeraMrnaEntry.deleteMany({ where: { organismId: organism.id } });
+  await (db as any).snornaClusterItem.deleteMany({ where: { organismId: organism.id } });
 
   for (const row of readCsv("all_snoRNA_table.csv")) {
     const snornaId = pick(row, "snoRNA_ID");
@@ -396,6 +439,7 @@ async function main() {
   }
 
   await importChimeraMrnaRows(organism.id, "Chimera_TB_snoRNAs_w_mRNA.csv");
+  await importSnornaClusterRows(organism.id, "snoRNA_Gene_Clusters_Trypanosoma_brucei.xlsx");
 
   const lmOrganism = await prisma.organism.findUnique({ where: { slug: "leishmania-major" } });
   if (!lmOrganism) throw new Error("Missing Leishmania major organism seed");
@@ -406,8 +450,9 @@ async function main() {
   await prisma.article.deleteMany({ where: { organismId: lmOrganism.id } });
   await prisma.rrnaUnit.deleteMany({ where: { organismId: lmOrganism.id } });
   await prisma.asset.deleteMany({ where: { organismId: lmOrganism.id } });
-  await prisma.chimeraDatasetMeta.deleteMany({ where: { organismId: lmOrganism.id } });
-  await prisma.chimeraMrnaEntry.deleteMany({ where: { organismId: lmOrganism.id } });
+  await db.chimeraDatasetMeta.deleteMany({ where: { organismId: lmOrganism.id } });
+  await db.chimeraMrnaEntry.deleteMany({ where: { organismId: lmOrganism.id } });
+  await (db as any).snornaClusterItem.deleteMany({ where: { organismId: lmOrganism.id } });
   await prisma.snoRna.deleteMany({ where: { organismId: lmOrganism.id } });
 
   for (const row of readCsv("all_LM_snoRNA_table.csv")) {

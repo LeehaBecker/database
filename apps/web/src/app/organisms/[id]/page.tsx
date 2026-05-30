@@ -50,6 +50,16 @@ export default async function OrganismLandingPage({ params }: { params: Promise<
             Browse Chimera, filter by columns, and export selected rows.
           </p>
         </Link>
+
+        <Link
+          href={`/organisms/${id}/snorna-clusters`}
+          className="rounded-2xl border border-emerald-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-50"
+        >
+          <h2 className="text-xl font-semibold text-emerald-900">snoRNA Clusters</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            Explore snoRNA cluster diagrams with clickable labels linked to snoRNA entries.
+          </p>
+        </Link>
       </section>
     </main>
   );

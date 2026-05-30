@@ -11,6 +11,17 @@ function parseCsvIds(value: string | null | undefined): string[] {
     .filter((item, index, arr) => item.length > 0 && arr.indexOf(item) === index);
 }
 
+function getSnornaLinkCandidates(snornaId: string): string[] {
+  const base = snornaId.trim();
+  const variants = [
+    base,
+    base.replace(/_g\d+$/i, ""),
+    base.replace(/-\d+$/, ""),
+    base.replace(/_copy\d+$/i, ""),
+  ].filter(Boolean);
+  return variants.filter((value, index) => variants.indexOf(value) === index);
+}
+
 snornaRouter.get("/", async (req, res) => {
   const parsed = snornaFilterSchema.safeParse(req.query);
   if (!parsed.success) {
@@ -44,6 +55,71 @@ snornaRouter.get("/", async (req, res) => {
     total,
     page,
     pageSize,
+  });
+});
+
+snornaRouter.get("/clusters", async (req, res) => {
+  const species = String(req.query.species ?? "trypanosoma-brucei");
+  const organism = await prisma.organism.findUnique({ where: { slug: species } });
+  if (!organism) {
+    res.status(404).json({ error: "organism not found" });
+    return;
+  }
+
+  const [clusterItems, snornas] = await Promise.all([
+    prisma.snornaClusterItem.findMany({
+      where: { organismId: organism.id },
+      orderBy: [{ clusterId: "asc" }, { itemOrder: "asc" }],
+    }),
+    prisma.snoRna.findMany({
+      where: { organismId: organism.id },
+      select: { snornaId: true },
+    }),
+  ]);
+
+  const existingIds = new Set(snornas.map((row) => row.snornaId));
+  const grouped = new Map<
+    number,
+    {
+      clusterId: number;
+      coordinates: string | null;
+      repeatedInGenome: number | null;
+      referenceUrl: string | null;
+      items: Array<{
+        snornaId: string;
+        linkedSnornaId: string | null;
+        isAvailable: boolean;
+        boxType: string | null;
+        geneLengthNt: number | null;
+        intergenicLengthNt: string | null;
+      }>;
+    }
+  >();
+
+  for (const row of clusterItems) {
+    const matchedId = getSnornaLinkCandidates(row.snornaId).find((candidate) => existingIds.has(candidate)) ?? null;
+    if (!grouped.has(row.clusterId)) {
+      grouped.set(row.clusterId, {
+        clusterId: row.clusterId,
+        coordinates: row.coordinates ?? null,
+        repeatedInGenome: row.clusterRepeatInGenome ?? null,
+        referenceUrl: row.referenceUrl ?? null,
+        items: [],
+      });
+    }
+    grouped.get(row.clusterId)!.items.push({
+      snornaId: row.snornaId,
+      linkedSnornaId: matchedId,
+      isAvailable: !!matchedId,
+      boxType: row.boxType ?? null,
+      geneLengthNt: row.geneLengthNt ?? null,
+      intergenicLengthNt: row.intergenicLengthNt ?? null,
+    });
+  }
+
+  res.json({
+    organism: { slug: organism.slug, name: organism.name },
+    clusters: Array.from(grouped.values()),
   });
 });
 
