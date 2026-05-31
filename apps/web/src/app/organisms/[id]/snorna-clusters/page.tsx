@@ -9,6 +9,7 @@ type ClusterItem = {
   boxType: string | null;
   geneLengthNt: number | null;
   intergenicLengthNt: string | null;
+  coordinatesList: string[];
 };
 
 type ClusterRow = {

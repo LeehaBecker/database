@@ -85,17 +85,12 @@ export function SnornaClusterViewer({ clusters }: { clusters: ClusterRow[] }) {
           <article key={cluster.clusterId} className="rounded border p-3">
             <header className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
               {(() => {
-                const headerCoordinates = Array.from(
-                  new Set(
-                    cluster.items.flatMap((item) =>
-                      item.coordinatesList.map((coordinate) => coordinate.trim()).filter(Boolean),
-                    ),
-                  ),
+                const headerCoordinates = cluster.items.flatMap((item) =>
+                  item.coordinatesList.length >= 1 ? [item.coordinatesList.join(", ")] : [],
                 );
                 return (
                   <>
                     <strong>Cluster {cluster.clusterId}</strong>
-                    <span>Coordinates: {headerCoordinates.length ? headerCoordinates.join(" | ") : "N/A"}</span>
                   </>
                 );
               })()}

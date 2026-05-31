@@ -92,6 +92,7 @@ snornaRouter.get("/clusters", async (req, res) => {
         boxType: string | null;
         geneLengthNt: number | null;
         intergenicLengthNt: string | null;
+        coordinatesList: string[];
       }>;
     }
   >();
@@ -114,7 +115,36 @@ snornaRouter.get("/clusters", async (req, res) => {
       boxType: row.boxType ?? null,
       geneLengthNt: row.geneLengthNt ?? null,
       intergenicLengthNt: row.intergenicLengthNt ?? null,
+      coordinatesList: row.coordinates ? [row.coordinates] : [],
     });
+  }
+
+  for (const cluster of grouped.values()) {
+    const merged: typeof cluster.items = [];
+    for (const item of cluster.items) {
+      const previous = merged[merged.length - 1];
+      const isCopyMarker = item.intergenicLengthNt === "-";
+      const canMergeWithPrevious =
+        !!previous && previous.snornaId === item.snornaId && (isCopyMarker || previous.intergenicLengthNt === "-");
+      if (!canMergeWithPrevious) {
+        merged.push({ ...item, coordinatesList: [...item.coordinatesList] });
+        continue;
+      }
+
+      for (const coordinate of item.coordinatesList) {
+        if (coordinate && !previous.coordinatesList.includes(coordinate)) {
+          previous.coordinatesList.push(coordinate);
+        }
+      }
+      if (item.intergenicLengthNt && item.intergenicLengthNt !== "-") {
+        previous.intergenicLengthNt = item.intergenicLengthNt;
+      }
+      if (!previous.linkedSnornaId && item.linkedSnornaId) {
+        previous.linkedSnornaId = item.linkedSnornaId;
+        previous.isAvailable = true;
+      }
+    }
+    cluster.items = merged;
   }
 
   res.json({
