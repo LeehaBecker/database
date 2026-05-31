@@ -187,11 +187,11 @@ export default async function SnornaDetailPage({ params }: { params: Promise<{ i
         {basePairingImages.length ? (
           <div className="space-y-4">
             {basePairingImages.map((imageUrl, index) => {
-              const imageName = decodeURIComponent(imageUrl.split("/").pop() ?? `base-pairing-${index + 1}.png`);
+              const imageName = decodeURIComponent(imageUrl.split("/").pop() ?? `base-pairing-${index + 1}.jpg`);
               return (
                 <article key={imageUrl} className="rounded border p-3">
                   <a href={imageUrl} target="_blank" rel="noreferrer" className="block">
-                    <img src={imageUrl} alt={`Base pairing ${item.snornaId} ${index + 1}`} className="mx-auto w-full max-w-md rounded border bg-slate-50" loading="lazy" />
+                    <img src={imageUrl} alt={`Base pairing ${item.snornaId} ${index + 1}`} className="w-full rounded border bg-slate-50" loading="lazy" />
                   </a>
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
                     <a href={imageUrl} target="_blank" rel="noreferrer" className="text-blue-700 underline">

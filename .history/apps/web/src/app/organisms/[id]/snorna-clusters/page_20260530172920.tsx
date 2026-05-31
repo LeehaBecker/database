@@ -37,9 +37,8 @@ export default async function SnornaClustersPage({ params }: { params: Promise<{
       <section className="rounded-xl border bg-white p-4">
         <h1 className="text-2xl font-bold">snoRNA Gene Clusters</h1>
         <p className="mt-2 text-sm text-slate-600">
-          Click a snoRNA label to open its existing entry page. Unavailable labels indicate no exact match in current snoRNA records. 
-          The C/D snoRNAs are shown as blue boxes, whereas H/ACA-like snoRNAs appear in green boxes. Thinner lines indicate intergenic regions, and their sizes are indicated above the line. 
-          The length of the snoRNA genes are indicated below the box
+          Click a snoRNA label to open its existing entry page. Unavailable labels indicate no exact match in current
+          snoRNA records.
         </p>
       </section>
       <SnornaClusterViewer clusters={data.clusters ?? []} />

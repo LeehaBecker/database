@@ -191,7 +191,7 @@ export default async function SnornaDetailPage({ params }: { params: Promise<{ i
               return (
                 <article key={imageUrl} className="rounded border p-3">
                   <a href={imageUrl} target="_blank" rel="noreferrer" className="block">
-                    <img src={imageUrl} alt={`Base pairing ${item.snornaId} ${index + 1}`} className="mx-auto w-full max-w-md rounded border bg-slate-50" loading="lazy" />
+                    <img src={imageUrl} alt={`Base pairing ${item.snornaId} ${index + 1}`} className="w-full rounded border bg-slate-50" loading="lazy" />
                   </a>
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
                     <a href={imageUrl} target="_blank" rel="noreferrer" className="text-blue-700 underline">
