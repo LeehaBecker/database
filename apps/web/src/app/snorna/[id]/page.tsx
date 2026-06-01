@@ -3,6 +3,7 @@ import { ExternalLink } from "lucide-react";
 import { access } from "node:fs/promises";
 import { constants as fsConstants } from "node:fs";
 import path from "node:path";
+import { readdir } from "node:fs/promises";
 import { apiFetch } from "@/lib/api";
 import { SnornaSequenceViewer } from "@/components/snorna-sequence-viewer";
 
@@ -34,32 +35,57 @@ export default async function SnornaDetailPage({ params }: { params: Promise<{ i
   const displaySequence = (item.sequence ?? "").replaceAll("T", "U").replaceAll("t", "u");
   const fasta = `>${item.snornaId}\n${displaySequence}`;
   const fastaHref = `data:text/plain;charset=utf-8,${encodeURIComponent(fasta)}`;
-  const basePairingImageBases = [item.snornaId, `${item.snornaId}_1`];
   const basePairingExtensions = ["png", "jpg", "jpeg"];
   const basePairingPublicDirs = [
     path.join(process.cwd(), "public", "base-pairing"),
     path.join(process.cwd(), "apps", "web", "public", "base-pairing"),
   ];
-  const basePairingImages = (
-    await Promise.all(
-      basePairingImageBases.map(async (baseName) => {
-        for (const extension of basePairingExtensions) {
-          const fileName = `${baseName}.${extension}`;
-          for (const publicDir of basePairingPublicDirs) {
-            const imagePath = path.join(publicDir, fileName);
-            try {
-              await access(imagePath, fsConstants.F_OK);
-              return `/base-pairing/${encodeURIComponent(fileName)}`;
-            } catch {
-              // Continue checking additional extensions/directories.
-            }
-          }
-        }
-        return null;
-      }),
-    )
-  ).filter((imageUrl): imageUrl is string => Boolean(imageUrl));
+  let basePairingDirPath: string | null = null;
+  for (const publicDir of basePairingPublicDirs) {
+    try {
+      await access(publicDir, fsConstants.F_OK);
+      basePairingDirPath = publicDir;
+      break;
+    } catch {
+      // Try the next known public directory.
+    }
+  }
+
+  const basePairingImageNames: string[] = [];
+  if (basePairingDirPath) {
+    const files = await readdir(basePairingDirPath);
+    const extensionPattern = basePairingExtensions.join("|");
+    const basePattern = new RegExp(
+      `^${item.snornaId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:_(\\d+))?\\.(${extensionPattern})$`,
+      "i",
+    );
+
+    const matched = files
+      .map((fileName) => {
+        const match = fileName.match(basePattern);
+        if (!match) return null;
+        const suffixNumber = match[1] ? Number(match[1]) : 0;
+        const extensionIndex = basePairingExtensions.findIndex((ext) => ext.toLowerCase() === match[2].toLowerCase());
+        return { fileName, suffixNumber, extensionIndex: extensionIndex >= 0 ? extensionIndex : basePairingExtensions.length };
+      })
+      .filter((entry): entry is { fileName: string; suffixNumber: number; extensionIndex: number } => Boolean(entry))
+      .sort((a, b) => {
+        if (a.suffixNumber !== b.suffixNumber) return a.suffixNumber - b.suffixNumber;
+        if (a.extensionIndex !== b.extensionIndex) return a.extensionIndex - b.extensionIndex;
+        return a.fileName.localeCompare(b.fileName);
+      });
+
+    for (const entry of matched) {
+      if (!basePairingImageNames.includes(entry.fileName)) {
+        basePairingImageNames.push(entry.fileName);
+      }
+    }
+  }
+
+  const basePairingImages = basePairingImageNames.map((fileName) => `/base-pairing/${encodeURIComponent(fileName)}`);
   const basePairingReferenceUrl = "https://pmc.ncbi.nlm.nih.gov/articles/PMC1370750/#sec17";
+  const basePairingHacaReferenceUrl = "https://pmc.ncbi.nlm.nih.gov/articles/PMC4855143/";
+  const showHacaBasePairingReference = item.type === "H/ACA" && item.organism?.slug === "trypanosoma-brucei";
 
   return (
     <main className="mx-auto max-w-6xl p-6 space-y-4">
@@ -203,6 +229,11 @@ export default async function SnornaDetailPage({ params }: { params: Promise<{ i
                     <a href={basePairingReferenceUrl} target="_blank" rel="noreferrer" className="text-blue-700 underline">
                       Reference
                     </a>
+                    {showHacaBasePairingReference ? (
+                      <a href={basePairingHacaReferenceUrl} target="_blank" rel="noreferrer" className="text-blue-700 underline">
+                        H/ACA Reference
+                      </a>
+                    ) : null}
                   </div>
                 </article>
               );
