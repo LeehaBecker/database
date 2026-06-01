@@ -4,7 +4,8 @@ import { apiFetch } from "@/lib/api";
 type Asset = { id: string; title: string; publicUrl: string };
 type Figure = { id: string; title: string; fileName: string; description: string };
 
-const REFERENCE_URL = "https://pmc.ncbi.nlm.nih.gov/articles/PMC7549662/";
+const TRYPANOSOMA_BRUCEI_REFERENCE_URL = "https://pmc.ncbi.nlm.nih.gov/articles/PMC7549662/";
+const LEISHMANIA_MAJOR_REFERENCE_URL = "https://pmc.ncbi.nlm.nih.gov/articles/PMC4829279/";
 
 const TRYPANOSOMA_BRUCEI_FIGURES: Figure[] = [
   {
@@ -30,10 +31,43 @@ const TRYPANOSOMA_BRUCEI_FIGURES: Figure[] = [
   },
 ];
 
+const LEISHMANIA_MAJOR_FIGURES: Figure[] = [
+  {
+    id: "lm-ssu",
+    title: "LM SSU rRNA",
+    fileName: "LM_ssu.jpg",
+    description:
+      "Modification of SSU. Location of modified nucleotides on the structure of rRNA. The Nm are marked as m, and the pseudouridines as Ψ. The secondary structure was predicted based on the structure presented for T. brucei at htttp://www.icmb.utexas.edu, adjusting it to the L. major rRNA sequence. The identity of the small rRNA fragments and distinct domains is indicated and shaded. The modifications in different eukaryotes are designated by different colors, as indicated to the right.",
+  },
+  {
+    id: "lm-lsu5",
+    title: "LM LSU 5' rRNA",
+    fileName: "LM_LSU5.jpg",
+    description: "As in A but for the 5' half of LSU.",
+  },
+  {
+    id: "lm-lsu3",
+    title: "LM LSU 3' rRNA",
+    fileName: "LM_LSU3.jpg",
+    description: "The same as in A and B, but for the 3' part of LSU. The domains of the rRNA are indicated.",
+  },
+];
+
 export default async function RrnaSecondaryStructurePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const data = await apiFetch<{ assets: Asset[] }>(`/rrna?species=${id}`);
   const isTrypanosomaBrucei = id === "trypanosoma-brucei";
+  const isLeishmaniaMajor = id === "leishmania-major";
+  const imageFigures = isTrypanosomaBrucei
+    ? TRYPANOSOMA_BRUCEI_FIGURES
+    : isLeishmaniaMajor
+      ? LEISHMANIA_MAJOR_FIGURES
+      : [];
+  const referenceUrl = isTrypanosomaBrucei
+    ? TRYPANOSOMA_BRUCEI_REFERENCE_URL
+    : isLeishmaniaMajor
+      ? LEISHMANIA_MAJOR_REFERENCE_URL
+      : "";
 
   return (
     <main className="mx-auto max-w-6xl space-y-4 p-6">
@@ -42,9 +76,9 @@ export default async function RrnaSecondaryStructurePage({ params }: { params: P
       </Link>
       <section className="rounded-xl border bg-white p-4">
         <h1 className="mb-3 text-2xl font-bold">Secondary Structure</h1>
-        {isTrypanosomaBrucei ? (
+        {imageFigures.length ? (
           <div className="grid gap-4 lg:grid-cols-3">
-            {TRYPANOSOMA_BRUCEI_FIGURES.map((figure) => {
+            {imageFigures.map((figure) => {
               const url = `/rrna-secondary-structure/${encodeURIComponent(figure.fileName)}`;
               return (
                 <article key={figure.id} className="rounded-lg border p-3">
@@ -64,7 +98,7 @@ export default async function RrnaSecondaryStructurePage({ params }: { params: P
                     <a href={url} download={figure.fileName} className="text-blue-700 underline">
                       Download
                     </a>
-                    <a href={REFERENCE_URL} target="_blank" rel="noreferrer" className="text-blue-700 underline">
+                    <a href={referenceUrl} target="_blank" rel="noreferrer" className="text-blue-700 underline">
                       Reference
                     </a>
                   </div>

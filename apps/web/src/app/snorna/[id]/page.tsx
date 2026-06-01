@@ -83,7 +83,10 @@ export default async function SnornaDetailPage({ params }: { params: Promise<{ i
   }
 
   const basePairingImages = basePairingImageNames.map((fileName) => `/base-pairing/${encodeURIComponent(fileName)}`);
-  const basePairingReferenceUrl = "https://pmc.ncbi.nlm.nih.gov/articles/PMC1370750/#sec17";
+  const defaultBasePairingReferenceUrl = "https://pmc.ncbi.nlm.nih.gov/articles/PMC1370750/#sec17";
+  const leishmaniaBasePairingReferenceUrl = "https://pmc.ncbi.nlm.nih.gov/articles/PMC4829279/";
+  const basePairingReferenceUrl =
+    item.organism?.slug === "leishmania-major" ? leishmaniaBasePairingReferenceUrl : defaultBasePairingReferenceUrl;
   const basePairingHacaReferenceUrl = "https://pmc.ncbi.nlm.nih.gov/articles/PMC4855143/";
   const showHacaBasePairingReference = item.type === "H/ACA" && item.organism?.slug === "trypanosoma-brucei";
 
