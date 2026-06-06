@@ -22,6 +22,24 @@ function getSnornaLinkCandidates(snornaId: string): string[] {
   return variants.filter((value, index) => variants.indexOf(value) === index);
 }
 
+function compareSnornaIds(a: string, b: string): number {
+  const parse = (id: string) => {
+    const match = id.match(/^([A-Za-z]+)(\d+)Cs-?(\d+)/);
+    return {
+      chr: match ? Number(match[2]) : Number.MAX_SAFE_INTEGER,
+      cluster: match ? Number(match[3]) : Number.MAX_SAFE_INTEGER,
+      id,
+    };
+  };
+
+  const left = parse(a);
+  const right = parse(b);
+
+  if (left.chr !== right.chr) return left.chr - right.chr;
+  if (left.cluster !== right.cluster) return left.cluster - right.cluster;
+  return left.id.localeCompare(right.id);
+}
+
 snornaRouter.get("/", async (req, res) => {
   const parsed = snornaFilterSchema.safeParse(req.query);
   if (!parsed.success) {
@@ -34,16 +52,16 @@ snornaRouter.get("/", async (req, res) => {
     ...(search ? { snornaId: { contains: search, mode: "insensitive" as const } } : {}),
     ...(species ? { organism: { slug: species } } : {}),
   };
-  const [items, total] = await Promise.all([
+  const [allItems, total] = await Promise.all([
     prisma.snoRna.findMany({
       where,
       include: { targets: true, modificationSites: true },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-      orderBy: { snornaId: "asc" },
     }),
     prisma.snoRna.count({ where }),
   ]);
+
+  allItems.sort((a, b) => compareSnornaIds(a.snornaId, b.snornaId));
+  const items = allItems.slice((page - 1) * pageSize, page * pageSize);
   res.json({
     items: items.map((item) => ({
       id: item.id,
