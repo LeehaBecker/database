@@ -7,6 +7,8 @@ type SnoRow = {
   boxType: string;
   targetType: string;
   targetCount: number;
+  hasHomolog: boolean;
+  singleCopyGene: string | null;
 };
 
 export default async function OrganismSnornaPage({ params }: { params: Promise<{ id: string }> }) {

@@ -69,10 +69,6 @@ snornaRouter.get("/", async (req, res) => {
       boxType: item.type,
       targetType: item.type === "C/D" ? "Nm" : "Psi",
       targetCount: item.targets.length,
-      hasHomolog: Boolean(
-        item.lmHomologIds?.trim() || item.tbHomologIds?.trim() || item.ldHomologIds?.trim(),
-      ),
-      singleCopyGene: null as string | null,
     })),
     total,
     page,

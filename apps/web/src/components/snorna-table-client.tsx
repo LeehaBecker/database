@@ -9,10 +9,16 @@ type SnoRow = {
   boxType: string;
   targetType: string;
   targetCount: number;
+  hasHomolog: boolean;
+  singleCopyGene: string | null;
 };
 
 const matches = (value: string | number, filter: string) =>
   String(value).toLowerCase().includes(filter.trim().toLowerCase());
+
+const formatHasHomolog = (hasHomolog: boolean) => (hasHomolog ? "Yes" : "No");
+
+const formatSingleCopyGene = (value: string | null) => value ?? "—";
 
 export function SnornaTableClient({ rows, organismId, total }: { rows: SnoRow[]; organismId: string; total: number }) {
   const [filters, setFilters] = useState({
@@ -20,6 +26,8 @@ export function SnornaTableClient({ rows, organismId, total }: { rows: SnoRow[];
     boxType: "",
     targetType: "",
     targetCount: "",
+    hasHomolog: "",
+    singleCopyGene: "",
   });
   const [selectedIds, setSelectedIds] = useState<Record<string, boolean>>({});
 
@@ -30,7 +38,9 @@ export function SnornaTableClient({ rows, organismId, total }: { rows: SnoRow[];
           matches(row.snoRNAId, filters.snoRNAId) &&
           matches(row.boxType, filters.boxType) &&
           matches(row.targetType, filters.targetType) &&
-          matches(row.targetCount, filters.targetCount),
+          matches(row.targetCount, filters.targetCount) &&
+          matches(formatHasHomolog(row.hasHomolog), filters.hasHomolog) &&
+          matches(formatSingleCopyGene(row.singleCopyGene), filters.singleCopyGene),
       ),
     [rows, filters],
   );
@@ -39,10 +49,19 @@ export function SnornaTableClient({ rows, organismId, total }: { rows: SnoRow[];
 
   const csvHref = useMemo(() => {
     if (!selectedRows.length) return "";
-    const header = ["snoRNA ID", "Box Type", "Target Type", "Target Count"];
+    const header = ["snoRNA ID", "Box Type", "Target Type", "Target Count", "Has a homolog", "Single copy gene"];
     const csv = [
       header.join(","),
-      ...selectedRows.map((row) => [row.snoRNAId, row.boxType, row.targetType, String(row.targetCount)].join(",")),
+      ...selectedRows.map((row) =>
+        [
+          row.snoRNAId,
+          row.boxType,
+          row.targetType,
+          String(row.targetCount),
+          formatHasHomolog(row.hasHomolog),
+          formatSingleCopyGene(row.singleCopyGene),
+        ].join(","),
+      ),
     ].join("\n");
     return `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
   }, [selectedRows]);
@@ -58,7 +77,7 @@ export function SnornaTableClient({ rows, organismId, total }: { rows: SnoRow[];
       </div>
 
       <section className="rounded-2xl border border-cyan-200 bg-white p-4 shadow-sm">
-        <div className="grid gap-3 md:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
           <input
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
             placeholder="Filter snoRNA ID"
@@ -83,6 +102,18 @@ export function SnornaTableClient({ rows, organismId, total }: { rows: SnoRow[];
             value={filters.targetCount}
             onChange={(event) => setFilters((prev) => ({ ...prev, targetCount: event.target.value }))}
           />
+          <input
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            placeholder="Filter Has a homolog"
+            value={filters.hasHomolog}
+            onChange={(event) => setFilters((prev) => ({ ...prev, hasHomolog: event.target.value }))}
+          />
+          <input
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            placeholder="Filter Single copy gene"
+            value={filters.singleCopyGene}
+            onChange={(event) => setFilters((prev) => ({ ...prev, singleCopyGene: event.target.value }))}
+          />
         </div>
         <div className="mt-3 flex items-center gap-3 text-sm">
           <span>Selected rows: {selectedRows.length}</span>
@@ -97,7 +128,7 @@ export function SnornaTableClient({ rows, organismId, total }: { rows: SnoRow[];
       </section>
 
       <section className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <table className="min-w-[1100px] w-full text-sm">
+        <table className="min-w-[1300px] w-full text-sm">
           <thead className="bg-slate-100 text-slate-700">
             <tr>
               <th className="p-3 text-left">
@@ -119,6 +150,8 @@ export function SnornaTableClient({ rows, organismId, total }: { rows: SnoRow[];
               <th className="p-3 text-left">Box Type</th>
               <th className="p-3 text-left">Target Type</th>
               <th className="p-3 text-left">Target Count</th>
+              <th className="p-3 text-left">Has a homolog</th>
+              <th className="p-3 text-left">Single copy gene</th>
             </tr>
           </thead>
           <tbody>
@@ -145,11 +178,13 @@ export function SnornaTableClient({ rows, organismId, total }: { rows: SnoRow[];
                 <td className="p-3">{item.boxType}</td>
                 <td className="p-3">{item.targetType}</td>
                 <td className="p-3">{item.targetCount}</td>
+                <td className="p-3">{formatHasHomolog(item.hasHomolog)}</td>
+                <td className="p-3">{formatSingleCopyGene(item.singleCopyGene)}</td>
               </tr>
             ))}
             {!filteredRows.length && (
               <tr>
-                <td className="p-4 text-slate-500" colSpan={5}>
+                <td className="p-4 text-slate-500" colSpan={7}>
                   No rows match the current filters.
                 </td>
               </tr>

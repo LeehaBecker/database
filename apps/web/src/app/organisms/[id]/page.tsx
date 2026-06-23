@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getOrganismGenomeReferenceUrl } from "@/lib/organism-genome-references";
 
 const prettyName = (slug: string) =>
   slug
@@ -8,6 +9,7 @@ const prettyName = (slug: string) =>
 
 export default async function OrganismLandingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const genomeReferenceUrl = getOrganismGenomeReferenceUrl(id);
 
   return (
     <main className="mx-auto min-h-screen max-w-6xl space-y-6 px-6 py-8">
@@ -60,6 +62,18 @@ export default async function OrganismLandingPage({ params }: { params: Promise<
             Explore snoRNA cluster diagrams with clickable labels linked to snoRNA entries.
           </p>
         </Link>
+
+        {genomeReferenceUrl ? (
+          <a
+            href={genomeReferenceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-2xl border border-amber-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:bg-amber-50"
+          >
+            <h2 className="text-xl font-semibold text-amber-900">Genome reference</h2>
+            <p className="mt-2 text-sm text-slate-600">View the NCBI genome assembly for this organism.</p>
+          </a>
+        ) : null}
       </section>
     </main>
   );

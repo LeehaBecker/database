@@ -5,6 +5,7 @@ import { constants as fsConstants } from "node:fs";
 import path from "node:path";
 import { readdir } from "node:fs/promises";
 import { apiFetch } from "@/lib/api";
+import { parseChromosomeFromSnornaId } from "@/lib/snorna-id";
 import { SnornaSequenceViewer } from "@/components/snorna-sequence-viewer";
 
 type SnornaDetail = {
@@ -110,6 +111,8 @@ export default async function SnornaDetailPage({ params }: { params: Promise<{ i
         <article className="rounded-xl border bg-white p-4 space-y-1">
           <h2 className="font-semibold">Basic Information</h2>
           <p>snoRNA ID: {item.snornaId}</p>
+          <p>Chromosome: {parseChromosomeFromSnornaId(item.snornaId) ?? "—"}</p>
+          <p>Single copy gene/Cluster: —</p>
           <p>Type: {item.type}</p>
           <p>Length: {item.length}</p>
           <p>Modification sites: {item.modificationSites.length}</p>

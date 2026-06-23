@@ -1,42 +1,26 @@
-import { apiFetch } from "@/lib/api";
-import { ChimeraTableClient } from "@/components/chimera-table-client";
+import Link from "next/link";
 
-type ChimeraMrnaResponse = {
-  columns: string[];
-  rows: Record<string, string>[];
-  total: number;
-  page: number;
-  pageSize: number;
-};
-
-export default async function OrganismSnornaMrnaChimerasPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ page?: string; pageSize?: string; search?: string }>;
-}) {
+export default async function OrganismSnornaMrnaChimerasPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const qp = await searchParams;
-  const page = Number(qp.page ?? "1");
-  const pageSize = Number(qp.pageSize ?? "50");
-  const search = qp.search?.trim() ?? "";
-  const data = await apiFetch<ChimeraMrnaResponse>(
-    `/chimera/mrna?species=${encodeURIComponent(id)}&page=${Number.isFinite(page) && page > 0 ? page : 1}&pageSize=${
-      Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 50
-    }&search=${encodeURIComponent(search)}`,
-  );
 
   return (
-    <ChimeraTableClient
-      columns={data.columns}
-      rows={data.rows}
-      organismId={id}
-      datasetLabel="snoRNA - mRNA Chimeras"
-      page={data.page}
-      pageSize={data.pageSize}
-      total={data.total}
-      search={search}
-    />
+    <main className="mx-auto max-w-[95rem] space-y-4 px-4 py-8 lg:px-8">
+      <div className="space-y-2">
+        <Link href={`/organisms/${id}/chimera`} className="text-sm text-cyan-700 underline">
+          Back to Chimera cards
+        </Link>
+        <h1 className="text-3xl font-bold text-slate-900">snoRNA - mRNA Chimeras</h1>
+        <p className="max-w-5xl pt-2 text-base text-slate-700">
+          Each column represents an experimental condition. The table contains raw read counts of snoRNA-mRNA chimeras.
+          The Sum_plus_ligation column displays the total sum of the plus-ligation libraries (specifically: LIGM_REP1,
+          LIGP_REP1, MINUS_UV1, MINUS_UV2, PLUS_UV1, and PLUS_V2).
+        </p>
+      </div>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h2 className="text-xl font-semibold text-slate-900">Reference</h2>
+        <p className="mt-2 text-sm text-slate-600">Reference will be added here.</p>
+      </section>
+    </main>
   );
 }
