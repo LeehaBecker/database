@@ -2,6 +2,7 @@ node_modules
 .next
 dist
 .env
+.history/
 uploads
 coverage
 Site-db-data

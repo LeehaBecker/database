@@ -72,7 +72,7 @@ snornaRouter.get("/", async (req, res) => {
       hasHomolog: Boolean(
         item.lmHomologIds?.trim() || item.tbHomologIds?.trim() || item.ldHomologIds?.trim(),
       ),
-      singleCopyGene: null as string | null,
+      singleCopyGene: item.singleCopyGene ?? "No",
     })),
     total,
     page,

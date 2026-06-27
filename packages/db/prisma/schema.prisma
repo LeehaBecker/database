@@ -38,6 +38,7 @@ model SnoRna {
   tbHomologIds        String?
   ldHomologIds        String?
   homologSnoRnaId     String?
+  singleCopyGene      String?
   tritrypdbExternalId String?
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt

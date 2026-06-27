@@ -18,7 +18,7 @@ const matches = (value: string | number, filter: string) =>
 
 const formatHasHomolog = (hasHomolog: boolean) => (hasHomolog ? "Yes" : "No");
 
-const formatSingleCopyGene = (value: string | null) => value ?? "—";
+const formatSingleCopyGene = (value: string | null) => value?.trim() || "No";
 
 export function SnornaTableClient({ rows, organismId, total }: { rows: SnoRow[]; organismId: string; total: number }) {
   const [filters, setFilters] = useState({

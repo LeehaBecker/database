@@ -18,6 +18,7 @@ type SnornaDetail = {
   lmHomologIds?: string[];
   tbHomologIds?: string[];
   ldHomologIds?: string[];
+  singleCopyGene?: string | null;
   genomicLocations: Array<{ chr: string; start: number; end: number; strand: string }>;
   modificationSites: Array<{ rrnaSubunit: string; rrnaUnitLabel?: string; count: number; bp: string | null }>;
   targets: Array<{
@@ -112,7 +113,7 @@ export default async function SnornaDetailPage({ params }: { params: Promise<{ i
           <h2 className="font-semibold">Basic Information</h2>
           <p>snoRNA ID: {item.snornaId}</p>
           <p>Chromosome: {parseChromosomeFromSnornaId(item.snornaId) ?? "—"}</p>
-          <p>Single copy gene/Cluster: —</p>
+          <p>Single copy gene: {item.singleCopyGene ?? "No"}</p>
           <p>Type: {item.type}</p>
           <p>Length: {item.length}</p>
           <p>Modification sites: {item.modificationSites.length}</p>

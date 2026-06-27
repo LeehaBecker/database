@@ -227,6 +227,7 @@ async function main() {
     const referenceUrl = pick(row, "reference", "Reference") || null;
     const lmHomologIds = normalizeCsvList(pick(row, "LM Homolog")).join(",") || null;
     const primaryHomolog = lmHomologIds?.split(",")[0] || null;
+    const singleCopyGene = pick(row, "Single copy gene") || "No";
     await prisma.snoRna.upsert({
       where: { organismId_snornaId: { organismId: organism.id, snornaId } },
       update: {
@@ -238,6 +239,7 @@ async function main() {
         tbHomologIds: null,
         ldHomologIds: null,
         homologSnoRnaId: primaryHomolog,
+        singleCopyGene,
       },
       create: {
         organismId: organism.id,
@@ -250,6 +252,7 @@ async function main() {
         tbHomologIds: null,
         ldHomologIds: null,
         homologSnoRnaId: primaryHomolog,
+        singleCopyGene,
       },
     });
   }
@@ -462,6 +465,7 @@ async function main() {
     const tbHomologIds = normalizeCsvList(pick(row, "TB Homolog", "TB homolog")).join(",") || null;
     const ldHomologIds = normalizeCsvList(pick(row, "LD Homolog", "LD homolog")).join(",") || null;
     const primaryHomolog = tbHomologIds?.split(",")[0] || null;
+    const singleCopyGene = pick(row, "Single copy gene") || "No";
     await prisma.snoRna.create({
       data: {
         organismId: lmOrganism.id,
@@ -474,6 +478,7 @@ async function main() {
         tbHomologIds,
         ldHomologIds,
         homologSnoRnaId: primaryHomolog,
+        singleCopyGene,
       },
     });
   }
