@@ -1,5 +1,11 @@
-FROM node:20-alpine
+FROM node:20-bookworm-slim
 WORKDIR /app
+
+# BLAST+ for /tools/blast/run (makeblastdb, blastn)
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ncbi-blast+ \
+  && rm -rf /var/lib/apt/lists/*
+
 COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/package.json
 COPY packages/db/package.json packages/db/package.json

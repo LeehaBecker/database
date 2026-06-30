@@ -13,7 +13,12 @@ const ROOT_DATA = process.env.DATA_PATH ?? "C:/Users/ALEXANDER/Desktop/transfer-
 type FastaRecord = { id: string; sequence: string; source: string };
 
 function walk(dir: string, out: string[]) {
-  const entries = fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }) : [];
+  let entries: fs.Dirent[];
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return;
+  }
   for (const entry of entries) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) walk(full, out);
@@ -77,21 +82,32 @@ function fallbackSearch(sequence: string, records: FastaRecord[]) {
   return hits;
 }
 
+function buildSourceBySubjectId(records: FastaRecord[]): Map<string, string> {
+  const sourceBySubjectId = new Map<string, string>();
+  for (const record of records) {
+    if (!sourceBySubjectId.has(record.id)) {
+      sourceBySubjectId.set(record.id, record.source);
+    }
+  }
+  return sourceBySubjectId;
+}
+
 async function runBlastn(sequence: string, records: FastaRecord[]) {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "snorna-blast-"));
   const dbFastaPath = path.join(tempDir, "db.fasta");
   const queryPath = path.join(tempDir, "query.fasta");
   const dbPrefix = path.join(tempDir, "db");
+  const sourceBySubjectId = buildSourceBySubjectId(records);
   const dbContent = records.map((record) => `>${record.id}\n${record.sequence}`).join("\n");
   fs.writeFileSync(dbFastaPath, dbContent, "utf8");
   fs.writeFileSync(queryPath, `>query\n${sequence.replace(/\s+/g, "")}\n`, "utf8");
 
   try {
-    await execFileAsync("makeblastdb", ["-in", dbFastaPath, "-dbtype", "nucl", "-out", dbPrefix], { timeout: 30_000 });
+    await execFileAsync("makeblastdb", ["-in", dbFastaPath, "-dbtype", "nucl", "-out", dbPrefix], { timeout: 60_000 });
     const { stdout } = await execFileAsync(
       "blastn",
       ["-query", queryPath, "-db", dbPrefix, "-outfmt", "6 sseqid pident length evalue sstart send", "-max_target_seqs", "50"],
-      { timeout: 30_000 },
+      { timeout: 60_000 },
     );
     return stdout
       .trim()
@@ -101,6 +117,7 @@ async function runBlastn(sequence: string, records: FastaRecord[]) {
         const [subjectId, pident, length, evalue, sstart, send] = line.split("\t");
         return {
           subjectId,
+          source: sourceBySubjectId.get(subjectId ?? "") ?? undefined,
           identityPct: Number(pident),
           alignmentLength: Number(length),
           eValue: evalue,

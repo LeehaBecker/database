@@ -116,9 +116,9 @@ function readRowsByExtension(baseFileNameWithoutExt: string): Record<string, unk
   return [];
 }
 
-function normalizeCsvList(value: string): string[] {
+function parseHomologList(value: string): string[] {
   return value
-    .split(",")
+    .split(/[,;\/\n\r]+|\s+/)
     .map((part) => part.trim())
     .filter((part, index, arr) => part.length > 0 && arr.indexOf(part) === index);
 }
@@ -225,7 +225,7 @@ async function main() {
     const snornaId = pick(row, "snoRNA_ID");
     if (!snornaId) continue;
     const referenceUrl = pick(row, "reference", "Reference") || null;
-    const lmHomologIds = normalizeCsvList(pick(row, "LM Homolog")).join(",") || null;
+    const lmHomologIds = parseHomologList(pick(row, "LM Homolog")).join(",") || null;
     const primaryHomolog = lmHomologIds?.split(",")[0] || null;
     const singleCopyGene = pick(row, "Single copy gene") || "No";
     await prisma.snoRna.upsert({
@@ -407,11 +407,13 @@ async function main() {
 
   await prisma.tool.upsert({
     where: { slug: "blast" },
-    update: {},
+    update: {
+      description: "Run local BLAST against all FASTA sequences in Site-db-data",
+    },
     create: {
       slug: "blast",
       name: "BLAST",
-      description: "Run local BLAST against rRNA sequences",
+      description: "Run local BLAST against all FASTA sequences in Site-db-data",
       externalUrl:
         "https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&PAGE_TYPE=BlastSearch&LINK_LOC=blasthome",
     },
@@ -462,8 +464,8 @@ async function main() {
     const snornaId = pick(row, "snoRNA_ID");
     if (!snornaId) continue;
     const referenceUrl = pick(row, "reference", "Reference") || null;
-    const tbHomologIds = normalizeCsvList(pick(row, "TB Homolog", "TB homolog")).join(",") || null;
-    const ldHomologIds = normalizeCsvList(pick(row, "LD Homolog", "LD homolog")).join(",") || null;
+    const tbHomologIds = parseHomologList(pick(row, "TB Homolog", "TB homolog")).join(",") || null;
+    const ldHomologIds = parseHomologList(pick(row, "LD Homolog", "LD homolog")).join(",") || null;
     const primaryHomolog = tbHomologIds?.split(",")[0] || null;
     const singleCopyGene = pick(row, "Single copy gene") || "No";
     await prisma.snoRna.create({

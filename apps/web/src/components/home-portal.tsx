@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
 import { Search } from "lucide-react";
 
 const organisms = [
@@ -9,18 +11,33 @@ const organisms = [
 ];
 
 export function HomePortal() {
+  const router = useRouter();
+  const [query, setQuery] = useState("");
+
+  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+  };
+
   return (
     <div className="space-y-8">
       <section className="rounded-3xl border border-cyan-200/70 bg-gradient-to-r from-sky-100 via-cyan-50 to-indigo-100 p-8 shadow-sm">
         <h1 className="text-4xl font-bold text-slate-900 md:text-5xl">Welcome to snoRNA-BIU</h1>
         <p className="mt-2 text-lg text-slate-700">snoRNA-BIU: The non-coding RNA sequence database</p>
-        <div className="mt-6 flex items-center rounded-xl border border-cyan-300 bg-white/90 px-4 py-3 shadow-sm">
-          <Search className="mr-2 h-6 w-6 text-cyan-600" />
+        <form
+          className="mt-6 flex items-center rounded-xl border border-cyan-300 bg-white/90 px-4 py-3 shadow-sm"
+          onSubmit={handleSearch}
+        >
+          <Search className="mr-2 h-6 w-6 shrink-0 text-cyan-600" />
           <input
+            type="search"
+            aria-label="Search by snoRNA ID"
             className="w-full bg-transparent text-lg outline-none"
-            placeholder="Search by species, ID, name"
+            placeholder="Search by snoRNA ID"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
           />
-        </div>
+        </form>
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">
