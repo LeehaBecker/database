@@ -383,6 +383,8 @@ export const ASSISTANT_TOOL_DEFINITIONS = [
   },
 ];
 
+export const GEMINI_FUNCTION_DECLARATIONS = ASSISTANT_TOOL_DEFINITIONS.map((tool) => tool.function);
+
 export async function executeAssistantTool(
   name: string,
   args: unknown,

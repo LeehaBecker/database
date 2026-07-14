@@ -31,7 +31,9 @@ app.use("/admin", adminRouter);
 app.use("/tools/blast", blastRouter);
 app.use("/tools/genome-browser", genomeBrowserRouter);
 app.use("/chimera", chimeraRouter);
-app.use("/assistant", assistantRateLimit, assistantRouter);
+if (process.env.ENABLE_ASSISTANT !== "false") {
+  app.use("/assistant", assistantRateLimit, assistantRouter);
+}
 
 const port = Number(process.env.API_PORT ?? 4000);
 app.listen(port, () => console.log(`API listening on ${port}`));

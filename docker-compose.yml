@@ -35,6 +35,22 @@ services:
       - api
     ports:
       - "3000:3000"
+  web-no-bot:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile.web
+      args:
+        NEXT_PUBLIC_ENABLE_ASSISTANT: "false"
+        NEXT_PUBLIC_API_URL: http://localhost:4000
+    env_file: .env
+    environment:
+      INTERNAL_API_URL: http://api:4000
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      NEXT_PUBLIC_ENABLE_ASSISTANT: "false"
+    depends_on:
+      - api
+    ports:
+      - "3001:3000"
 
 volumes:
   postgres_data:
