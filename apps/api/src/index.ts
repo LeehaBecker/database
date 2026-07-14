@@ -12,6 +12,11 @@ import { blastRouter } from "./routes/blast.js";
 import { genomeBrowserRouter } from "./routes/genome-browser.js";
 import { chimeraRouter } from "./routes/chimera.js";
 import { assistantRouter } from "./routes/assistant.js";
+import { statsRouter } from "./routes/stats.js";
+import { interactionsRouter } from "./routes/interactions.js";
+import { homologsRouter } from "./routes/homologs.js";
+import { downloadsRouter } from "./routes/downloads.js";
+import { sequenceToolsRouter } from "./routes/sequence-tools.js";
 
 const app = express();
 app.use(helmet());
@@ -31,6 +36,11 @@ app.use("/admin", adminRouter);
 app.use("/tools/blast", blastRouter);
 app.use("/tools/genome-browser", genomeBrowserRouter);
 app.use("/chimera", chimeraRouter);
+app.use("/stats", statsRouter);
+app.use("/tools/interactions", interactionsRouter);
+app.use("/tools/homologs", homologsRouter);
+app.use("/downloads", downloadsRouter);
+app.use("/tools/sequence", sequenceToolsRouter);
 if (process.env.ENABLE_ASSISTANT !== "false") {
   app.use("/assistant", assistantRateLimit, assistantRouter);
 }

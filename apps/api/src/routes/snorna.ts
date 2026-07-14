@@ -55,7 +55,7 @@ snornaRouter.get("/", async (req, res) => {
   const [allItems, total] = await Promise.all([
     prisma.snoRna.findMany({
       where,
-      include: { targets: true, modificationSites: true },
+      include: { targets: true, modificationSites: true, genomicLocations: true },
     }),
     prisma.snoRna.count({ where }),
   ]);
@@ -73,6 +73,12 @@ snornaRouter.get("/", async (req, res) => {
         item.lmHomologIds?.trim() || item.tbHomologIds?.trim() || item.ldHomologIds?.trim(),
       ),
       singleCopyGene: item.singleCopyGene ?? "No",
+      genomicLocations: item.genomicLocations.map((loc) => ({
+        chr: loc.chr,
+        start: loc.start,
+        end: loc.end,
+        strand: loc.strand,
+      })),
     })),
     total,
     page,

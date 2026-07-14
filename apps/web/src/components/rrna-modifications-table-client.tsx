@@ -11,18 +11,16 @@ type ModRow = {
   snoRna: { snornaId: string } | null;
 };
 
+type SortKey = "rrnaSubunit" | "count" | "snoRNA" | "modType" | "base";
+
 const includes = (value: string | number | null | undefined, query: string) =>
   String(value ?? "").toLowerCase().includes(query.trim().toLowerCase());
 
-export function RrnaModificationsTableClient({ rows }: { rows: ModRow[] }) {
-  const [filters, setFilters] = useState({
-    rrnaSubunit: "",
-    position: "",
-    snoRNA: "",
-    modType: "",
-    base: "",
-  });
+export function RrnaModificationsTableClient({ rows, organismId }: { rows: ModRow[]; organismId?: string }) {
+  const [filters, setFilters] = useState({ rrnaSubunit: "", position: "", snoRNA: "", modType: "", base: "" });
   const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [sortKey, setSortKey] = useState<SortKey>("rrnaSubunit");
+  const [sortAsc, setSortAsc] = useState(true);
 
   const filtered = useMemo(
     () =>
@@ -37,10 +35,26 @@ export function RrnaModificationsTableClient({ rows }: { rows: ModRow[] }) {
     [rows, filters],
   );
 
+  const sorted = useMemo(() => {
+    const copy = [...filtered];
+    copy.sort((a, b) => {
+      let left: string | number = "";
+      let right: string | number = "";
+      if (sortKey === "count") { left = a.count; right = b.count; }
+      else if (sortKey === "snoRNA") { left = a.snoRna?.snornaId ?? ""; right = b.snoRna?.snornaId ?? ""; }
+      else if (sortKey === "modType") { left = a.modType ?? ""; right = b.modType ?? ""; }
+      else if (sortKey === "base") { left = a.bp ?? ""; right = b.bp ?? ""; }
+      else { left = a.rrnaSubunit; right = b.rrnaSubunit; }
+      const cmp = typeof left === "number" && typeof right === "number" ? left - right : String(left).localeCompare(String(right));
+      return sortAsc ? cmp : -cmp;
+    });
+    return copy;
+  }, [filtered, sortKey, sortAsc]);
+
   const keyOf = (row: ModRow, index: number) =>
     `${row.rrnaSubunit}|${row.count}|${row.snoRna?.snornaId ?? "Not Known"}|${row.modType ?? "Not Known"}|${index}`;
 
-  const selectedRows = filtered.filter((row, index) => selected[keyOf(row, index)]);
+  const selectedRows = sorted.filter((row, index) => selected[keyOf(row, index)]);
 
   const csvHref = useMemo(() => {
     if (!selectedRows.length) return "";
@@ -51,48 +65,26 @@ export function RrnaModificationsTableClient({ rows }: { rows: ModRow[] }) {
     return `data:text/csv;charset=utf-8,${encodeURIComponent([header.join(","), ...lines].join("\n"))}`;
   }, [selectedRows]);
 
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortAsc(!sortAsc);
+    else { setSortKey(key); setSortAsc(true); }
+  };
+
+  const sortIndicator = (key: SortKey) => (sortKey === key ? (sortAsc ? " ↑" : " ↓") : "");
+
   return (
     <div className="space-y-3">
       <div className="grid gap-3 md:grid-cols-5">
-        <input
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          placeholder="Filter rRNA unit"
-          value={filters.rrnaSubunit}
-          onChange={(event) => setFilters((prev) => ({ ...prev, rrnaSubunit: event.target.value }))}
-        />
-        <input
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          placeholder="Filter position"
-          value={filters.position}
-          onChange={(event) => setFilters((prev) => ({ ...prev, position: event.target.value }))}
-        />
-        <input
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          placeholder="Filter snoRNA"
-          value={filters.snoRNA}
-          onChange={(event) => setFilters((prev) => ({ ...prev, snoRNA: event.target.value }))}
-        />
-        <input
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          placeholder="Filter type"
-          value={filters.modType}
-          onChange={(event) => setFilters((prev) => ({ ...prev, modType: event.target.value }))}
-        />
-        <input
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          placeholder="Filter base"
-          value={filters.base}
-          onChange={(event) => setFilters((prev) => ({ ...prev, base: event.target.value }))}
-        />
+        <input className="rounded-lg border px-3 py-2 text-sm" placeholder="Filter rRNA unit" value={filters.rrnaSubunit} onChange={(e) => setFilters((p) => ({ ...p, rrnaSubunit: e.target.value }))} />
+        <input className="rounded-lg border px-3 py-2 text-sm" placeholder="Filter position" value={filters.position} onChange={(e) => setFilters((p) => ({ ...p, position: e.target.value }))} />
+        <input className="rounded-lg border px-3 py-2 text-sm" placeholder="Filter snoRNA" value={filters.snoRNA} onChange={(e) => setFilters((p) => ({ ...p, snoRNA: e.target.value }))} />
+        <input className="rounded-lg border px-3 py-2 text-sm" placeholder="Filter type" value={filters.modType} onChange={(e) => setFilters((p) => ({ ...p, modType: e.target.value }))} />
+        <input className="rounded-lg border px-3 py-2 text-sm" placeholder="Filter base" value={filters.base} onChange={(e) => setFilters((p) => ({ ...p, base: e.target.value }))} />
       </div>
 
-      <div className="flex items-center gap-3 text-sm">
+      <div className="flex flex-wrap items-center gap-3 text-sm">
         <span>Selected rows: {selectedRows.length}</span>
-        <a
-          href={csvHref || undefined}
-          download="rrna-modification-sites-selection.csv"
-          className={`rounded-lg px-3 py-1.5 ${selectedRows.length ? "bg-violet-600 text-white" : "pointer-events-none bg-slate-200 text-slate-500"}`}
-        >
+        <a href={csvHref || undefined} download="rrna-modification-sites-selection.csv" className={`rounded-lg px-3 py-1.5 ${selectedRows.length ? "bg-violet-600 text-white" : "pointer-events-none bg-slate-200 text-slate-500"}`}>
           Download CSV
         </a>
       </div>
@@ -101,67 +93,40 @@ export function RrnaModificationsTableClient({ rows }: { rows: ModRow[] }) {
         <table className="min-w-[1000px] w-full text-sm">
           <thead>
             <tr className="bg-slate-100 text-slate-700">
-              <th className="p-3 text-left">
-                <input
-                  type="checkbox"
-                  aria-label="Select all filtered rows"
-                  checked={filtered.length > 0 && filtered.every((row, index) => selected[keyOf(row, index)])}
-                  onChange={(event) => {
-                    const checked = event.target.checked;
-                    setSelected((prev) => {
-                      const next = { ...prev };
-                      filtered.forEach((row, index) => {
-                        next[keyOf(row, index)] = checked;
-                      });
-                      return next;
-                    });
-                  }}
-                />
-              </th>
-              <th className="p-3 text-left">rRNA unit</th>
-              <th className="p-3 text-left">Position</th>
-              <th className="p-3 text-left">snoRNA</th>
-              <th className="p-3 text-left">Type</th>
-              <th className="p-3 text-left">Base</th>
+              <th className="p-3 text-left"><input type="checkbox" checked={sorted.length > 0 && sorted.every((row, i) => selected[keyOf(row, i)])} onChange={(e) => {
+                const checked = e.target.checked;
+                setSelected((prev) => { const next = { ...prev }; sorted.forEach((row, i) => { next[keyOf(row, i)] = checked; }); return next; });
+              }} /></th>
+              <th className="cursor-pointer p-3 text-left" onClick={() => toggleSort("rrnaSubunit")}>rRNA unit{sortIndicator("rrnaSubunit")}</th>
+              <th className="cursor-pointer p-3 text-left" onClick={() => toggleSort("count")}>Position{sortIndicator("count")}</th>
+              <th className="cursor-pointer p-3 text-left" onClick={() => toggleSort("snoRNA")}>snoRNA{sortIndicator("snoRNA")}</th>
+              <th className="cursor-pointer p-3 text-left" onClick={() => toggleSort("modType")}>Type{sortIndicator("modType")}</th>
+              <th className="cursor-pointer p-3 text-left" onClick={() => toggleSort("base")}>Base{sortIndicator("base")}</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((row, index) => {
+            {sorted.map((row, index) => {
               const key = keyOf(row, index);
               return (
                 <tr key={key} className="border-t">
-                  <td className="p-3">
-                    <input
-                      type="checkbox"
-                      checked={!!selected[key]}
-                      onChange={(event) => {
-                        setSelected((prev) => ({ ...prev, [key]: event.target.checked }));
-                      }}
-                    />
-                  </td>
+                  <td className="p-3"><input type="checkbox" checked={!!selected[key]} onChange={(e) => setSelected((p) => ({ ...p, [key]: e.target.checked }))} /></td>
                   <td className="p-3">{row.rrnaSubunit}</td>
-                  <td className="p-3">{row.count}</td>
+                  <td className="p-3">
+                    {organismId ? (
+                      <Link href={`/tools/interactions?subunit=${encodeURIComponent(row.rrnaSubunit)}&position=${row.count}`} className="text-blue-700 underline">{row.count}</Link>
+                    ) : row.count}
+                  </td>
                   <td className="p-3">
                     {row.snoRna?.snornaId ? (
-                      <Link className="text-blue-700 underline" href={`/snorna/${row.snoRna.snornaId}`}>
-                        {row.snoRna.snornaId}
-                      </Link>
-                    ) : (
-                      "Not Known"
-                    )}
+                      <Link className="text-blue-700 underline" href={`/snorna/${row.snoRna.snornaId}`}>{row.snoRna.snornaId}</Link>
+                    ) : "Not Known"}
                   </td>
                   <td className="p-3">{row.modType ?? "Not Known"}</td>
                   <td className="p-3">{row.bp ?? "Not Known"}</td>
                 </tr>
               );
             })}
-            {!filtered.length && (
-              <tr>
-                <td className="p-4 text-slate-500" colSpan={6}>
-                  No rows match the current filters.
-                </td>
-              </tr>
-            )}
+            {!sorted.length && <tr><td className="p-4 text-slate-500" colSpan={6}>No rows match the current filters.</td></tr>}
           </tbody>
         </table>
       </div>

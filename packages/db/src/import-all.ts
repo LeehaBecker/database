@@ -605,6 +605,23 @@ async function main() {
   }
 
   await importChimeraMrnaRows(lmOrganism.id, "Chimera_LM_snoRNAs_w_mRNA.csv");
+
+  const summary = {
+    trypanosomaBrucei: {
+      snornas: await prisma.snoRna.count({ where: { organismId: organism.id } }),
+      genomicLocations: await prisma.genomicLocation.count({ where: { snoRna: { organismId: organism.id } } }),
+      modificationSites: await prisma.modificationSite.count({ where: { snoRna: { organismId: organism.id } } }),
+      rrnaUnits: await prisma.rrnaUnit.count({ where: { organismId: organism.id } }),
+      clusterItems: await (db as any).snornaClusterItem.count({ where: { organismId: organism.id } }),
+    },
+    leishmaniaMajor: {
+      snornas: await prisma.snoRna.count({ where: { organismId: lmOrganism.id } }),
+      genomicLocations: await prisma.genomicLocation.count({ where: { snoRna: { organismId: lmOrganism.id } } }),
+      modificationSites: await prisma.modificationSite.count({ where: { snoRna: { organismId: lmOrganism.id } } }),
+      rrnaUnits: await prisma.rrnaUnit.count({ where: { organismId: lmOrganism.id } }),
+    },
+  };
+  console.log("Import summary:", JSON.stringify(summary, null, 2));
 }
 
 main()

@@ -6,7 +6,11 @@ import path from "node:path";
 import { readdir } from "node:fs/promises";
 import { apiFetch } from "@/lib/api";
 import { parseChromosomeFromSnornaId } from "@/lib/snorna-id";
+import { genomeBrowserUrl } from "@/lib/site-config";
 import { SnornaSequenceViewer } from "@/components/snorna-sequence-viewer";
+import { CopyButton } from "@/components/copy-button";
+import { SnornaHomologComparison } from "@/components/snorna-homolog-comparison";
+import { PageShell } from "@/components/site-breadcrumbs";
 
 type SnornaDetail = {
   snornaId: string;
@@ -33,7 +37,6 @@ type SnornaDetail = {
 export default async function SnornaDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const item = await apiFetch<SnornaDetail>(`/snorna/${id}`);
-  const backToTableHref = `/organisms/${item.organism?.slug ?? "trypanosoma-brucei"}/snorna`;
   const displaySequence = (item.sequence ?? "").replaceAll("T", "U").replaceAll("t", "u");
   const fasta = `>${item.snornaId}\n${displaySequence}`;
   const fastaHref = `data:text/plain;charset=utf-8,${encodeURIComponent(fasta)}`;
@@ -93,10 +96,10 @@ export default async function SnornaDetailPage({ params }: { params: Promise<{ i
   const showHacaBasePairingReference = item.type === "H/ACA" && item.organism?.slug === "trypanosoma-brucei";
 
   return (
-    <main className="mx-auto max-w-6xl p-6 space-y-4">
+    <PageShell className="max-w-6xl space-y-4">
       <header className="flex items-center justify-between">
-        <Link href={backToTableHref} className="text-sm underline">
-          Back to table
+        <Link href={`/tools/interactions?mode=bySnorna&snornaId=${encodeURIComponent(item.snornaId)}`} className="text-sm text-cyan-700 underline">
+          View interactions
         </Link>
         <a href="https://tritrypdb.org" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm underline">
           View in TriTrypDB <ExternalLink className="h-4 w-4" />
@@ -123,7 +126,9 @@ export default async function SnornaDetailPage({ params }: { params: Promise<{ i
               <ul className="list-disc pl-5">
                 {item.genomicLocations.map((location, index) => (
                   <li key={`${location.chr}-${location.start}-${location.end}-${index}`}>
-                    {location.chr}:{location.start}-{location.end} ({location.strand})
+                    <Link href={genomeBrowserUrl(location.chr, location.start, location.end)} className="text-cyan-700 underline">
+                      {location.chr}:{location.start}-{location.end} ({location.strand})
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -143,9 +148,12 @@ export default async function SnornaDetailPage({ params }: { params: Promise<{ i
             <span className="inline-flex items-center gap-1"><i className="h-3 w-3 bg-amber-400 inline-block" /> H/ACA pockets</span>
             <span className="inline-flex items-center gap-1"><i className="h-3 w-3 bg-purple-400 inline-block" /> H/ACA stems</span>
           </div>
-          <a href={fastaHref} download={`${item.snornaId}.fasta`} className="mt-3 inline-block rounded border px-3 py-1 text-xs">
-            Download FASTA
-          </a>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <CopyButton text={displaySequence} label="Copy sequence" />
+            <a href={fastaHref} download={`${item.snornaId}.fasta`} className="rounded border px-3 py-1 text-xs">
+              Download FASTA
+            </a>
+          </div>
         </article>
       </section>
 
@@ -158,63 +166,24 @@ export default async function SnornaDetailPage({ params }: { params: Promise<{ i
           <tbody>
             {item.modificationSites.map((row, index) => (
               <tr key={index} className="border-t">
-                <td>{row.rrnaUnitLabel || row.rrnaSubunit || "Not Known"}</td><td>{row.count}</td><td>{row.bp ?? "Not Known"}</td>
+                <td>{row.rrnaUnitLabel || row.rrnaSubunit || "Not Known"}</td>
+                <td>
+                  <Link href={`/tools/interactions?subunit=${encodeURIComponent(row.rrnaSubunit)}&position=${row.count}`} className="text-blue-700 underline">
+                    {row.count}
+                  </Link>
+                </td>
+                <td>{row.bp ?? "Not Known"}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </section>
 
-      <section className="rounded-xl border bg-white p-4">
-        <h2 className="mb-2 font-semibold">Homolog</h2>
-        {!!item.lmHomologIds?.length && (
-          <div className="mb-3">
-            <p className="mb-1 text-sm font-medium text-slate-700">LM homologs</p>
-            <div className="flex flex-wrap gap-2">
-              {item.lmHomologIds.map((homologId) => (
-                <Link
-                  key={homologId}
-                  href={`/snorna/${homologId}`}
-                  className="rounded border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs text-emerald-900 underline"
-                >
-                  {homologId}
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-        {!!item.tbHomologIds?.length && (
-          <div className="mb-3">
-            <p className="mb-1 text-sm font-medium text-slate-700">TB homologs</p>
-            <div className="flex flex-wrap gap-2">
-              {item.tbHomologIds.map((homologId) => (
-                <Link
-                  key={homologId}
-                  href={`/snorna/${homologId}`}
-                  className="rounded border border-cyan-200 bg-cyan-50 px-2 py-1 text-xs text-cyan-900 underline"
-                >
-                  {homologId}
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-        {!!item.ldHomologIds?.length && (
-          <div>
-            <p className="mb-1 text-sm font-medium text-slate-700">LD homologs</p>
-            <div className="flex flex-wrap gap-2">
-              {item.ldHomologIds.map((homologId) => (
-                <span key={homologId} className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700">
-                  {homologId}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-        {!item.lmHomologIds?.length && !item.tbHomologIds?.length && !item.ldHomologIds?.length && (
-          <p className="text-sm text-slate-500">No homolog available</p>
-        )}
-      </section>
+      <SnornaHomologComparison
+        tbIds={item.tbHomologIds ?? []}
+        lmIds={item.lmHomologIds ?? []}
+        ldIds={item.ldHomologIds ?? []}
+      />
       <section className="rounded-xl border bg-white p-4">
         <h2 className="mb-2 font-semibold">Base pairing</h2>
         {basePairingImages.length ? (
@@ -264,6 +233,6 @@ export default async function SnornaDetailPage({ params }: { params: Promise<{ i
           <p className="text-sm text-slate-500">No reference available</p>
         )}
       </section>
-    </main>
+    </PageShell>
   );
 }

@@ -9,6 +9,7 @@ type SnoRow = {
   targetCount: number;
   hasHomolog: boolean;
   singleCopyGene: string | null;
+  genomicLocations?: Array<{ chr: string; start: number; end: number; strand: string }>;
 };
 
 export default async function OrganismSnornaPage({ params }: { params: Promise<{ id: string }> }) {

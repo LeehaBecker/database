@@ -21,7 +21,7 @@ export default async function RrnaModificationsPage({ params }: { params: Promis
       </Link>
       <section className="rounded-xl border bg-white p-4">
         <h1 className="mb-2 text-2xl font-bold">Modification Sites</h1>
-        <RrnaModificationsTableClient rows={mods} />
+        <RrnaModificationsTableClient rows={mods} organismId={id} />
       </section>
     </main>
   );
