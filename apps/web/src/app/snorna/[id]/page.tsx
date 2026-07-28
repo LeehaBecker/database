@@ -7,6 +7,8 @@ import { readdir } from "node:fs/promises";
 import { apiFetch } from "@/lib/api";
 import { parseChromosomeFromSnornaId } from "@/lib/snorna-id";
 import { genomeBrowserUrl } from "@/lib/site-config";
+import { GenomeVersionBadge } from "@/components/genome-version-badge";
+import { formatModificationCell, ModificationSiteReference } from "@/lib/modification-site";
 import { SnornaSequenceViewer } from "@/components/snorna-sequence-viewer";
 import { CopyButton } from "@/components/copy-button";
 import { SnornaHomologComparison } from "@/components/snorna-homolog-comparison";
@@ -24,7 +26,15 @@ type SnornaDetail = {
   ldHomologIds?: string[];
   singleCopyGene?: string | null;
   genomicLocations: Array<{ chr: string; start: number; end: number; strand: string }>;
-  modificationSites: Array<{ rrnaSubunit: string; rrnaUnitLabel?: string; count: number; bp: string | null }>;
+  modificationSites: Array<{
+    rrnaSubunit: string;
+    rrnaUnitLabel?: string;
+    count: number;
+    bp: string | null;
+    experimentallyValidated?: string | null;
+    mappedTo?: string | null;
+    reference?: string | null;
+  }>;
   targets: Array<{
     cBox: string | null;
     dBox: string | null;
@@ -94,6 +104,7 @@ export default async function SnornaDetailPage({ params }: { params: Promise<{ i
     item.organism?.slug === "leishmania-major" ? leishmaniaBasePairingReferenceUrl : defaultBasePairingReferenceUrl;
   const basePairingHacaReferenceUrl = "https://pmc.ncbi.nlm.nih.gov/articles/PMC4855143/";
   const showHacaBasePairingReference = item.type === "H/ACA" && item.organism?.slug === "trypanosoma-brucei";
+  const organismSlug = item.organism?.slug ?? "";
 
   return (
     <PageShell className="max-w-6xl space-y-4">
@@ -121,7 +132,10 @@ export default async function SnornaDetailPage({ params }: { params: Promise<{ i
           <p>Length: {item.length}</p>
           <p>Modification sites: {item.modificationSites.length}</p>
           <div>
-            <p className="font-medium">Genomic locations:</p>
+            <p className="font-medium">
+              Genomic locations:
+              <GenomeVersionBadge organismSlug={organismSlug} className="ml-1 text-sm" />
+            </p>
             {item.genomicLocations.length ? (
               <ul className="list-disc pl-5">
                 {item.genomicLocations.map((location, index) => (
@@ -158,10 +172,28 @@ export default async function SnornaDetailPage({ params }: { params: Promise<{ i
       </section>
 
       <section className="rounded-xl border bg-white p-4">
-        <h2 className="mb-2 font-semibold">Modification sites</h2>
-        <table className="w-full text-sm">
+        <div className="mb-2 flex items-start justify-between gap-4">
+          <h2 className="font-semibold">Modification sites</h2>
+          <GenomeVersionBadge organismSlug={organismSlug} />
+        </div>
+        <table className="w-full table-fixed text-sm">
+          <colgroup>
+            <col className="w-[24%]" />
+            <col className="w-[12%]" />
+            <col className="w-[8%]" />
+            <col className="w-[18%]" />
+            <col className="w-[14%]" />
+            <col className="w-[24%]" />
+          </colgroup>
           <thead>
-            <tr><th className="text-left">rRNA unit</th><th className="text-left">position</th><th className="text-left">BP</th></tr>
+            <tr>
+              <th className="text-left">rRNA unit</th>
+              <th className="text-left">position</th>
+              <th className="text-left">BP</th>
+              <th className="whitespace-normal text-left leading-tight">Experimentally validated</th>
+              <th className="text-left">Mapped to</th>
+              <th className="text-left">Reference</th>
+            </tr>
           </thead>
           <tbody>
             {item.modificationSites.map((row, index) => (
@@ -173,6 +205,9 @@ export default async function SnornaDetailPage({ params }: { params: Promise<{ i
                   </Link>
                 </td>
                 <td>{row.bp ?? "Not Known"}</td>
+                <td>{formatModificationCell(row.experimentallyValidated)}</td>
+                <td>{formatModificationCell(row.mappedTo)}</td>
+                <td><ModificationSiteReference value={row.reference} /></td>
               </tr>
             ))}
           </tbody>

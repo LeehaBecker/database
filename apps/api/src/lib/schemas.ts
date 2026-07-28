@@ -9,7 +9,7 @@ export const organismSchema = z.object({
 
 export const snornaFilterSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
-  pageSize: z.coerce.number().int().min(1).max(200).default(25),
+  pageSize: z.coerce.number().int().min(1).max(500).default(25),
   species: z.string().optional(),
   type: z.enum(["C/D", "H/ACA"]).optional(),
   search: z.string().optional(),

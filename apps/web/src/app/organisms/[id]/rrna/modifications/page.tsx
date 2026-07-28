@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
+import { GenomeVersionBadge } from "@/components/genome-version-badge";
 import { RrnaModificationsTableClient } from "@/components/rrna-modifications-table-client";
 
 type ModRow = {
@@ -20,7 +21,10 @@ export default async function RrnaModificationsPage({ params }: { params: Promis
         Back to rRNA cards
       </Link>
       <section className="rounded-xl border bg-white p-4">
-        <h1 className="mb-2 text-2xl font-bold">Modification Sites</h1>
+        <div className="mb-2 flex items-start justify-between gap-4">
+          <h1 className="text-2xl font-bold">Modification Sites</h1>
+          <GenomeVersionBadge organismSlug={id} />
+        </div>
         <RrnaModificationsTableClient rows={mods} organismId={id} />
       </section>
     </main>

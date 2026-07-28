@@ -1,3 +1,5 @@
+import { DATASET_VERSION } from "@/lib/api";
+
 export const ORGANISMS = [
   { slug: "trypanosoma-brucei", name: "Trypanosoma brucei", short: "T. brucei" },
   { slug: "leishmania-major", name: "Leishmania major", short: "L. major" },
@@ -27,4 +29,10 @@ export function prettyOrganismName(slug: string) {
 
 export function genomeBrowserUrl(chr: string, start: number, end: number) {
   return `/tools/genome-browser?chr=${encodeURIComponent(chr)}&start=${start}&end=${end}`;
+}
+
+export function genomeVersionLabel(slug: string): string | null {
+  if (slug !== "trypanosoma-brucei") return null;
+  const match = DATASET_VERSION.match(/-(\d+)$/);
+  return match ? match[1] : "68";
 }

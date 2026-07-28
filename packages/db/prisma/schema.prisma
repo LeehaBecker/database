@@ -108,6 +108,9 @@ model ModificationSite {
   bp          String?
   base        String?
   modType     String?
+  experimentallyValidated String?
+  mappedTo              String?
+  reference             String?
   snoRna      SnoRna   @relation(fields: [snoRnaId], references: [id], onDelete: Cascade)
   rrnaUnit    RrnaUnit? @relation(fields: [rrnaUnitId], references: [id], onDelete: SetNull)
 

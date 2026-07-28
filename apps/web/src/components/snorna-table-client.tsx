@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { PageShell } from "@/components/site-breadcrumbs";
+import { compareSnornaIds } from "@/lib/snorna-id";
 import { genomeBrowserUrl } from "@/lib/site-config";
 
 type GenomicLocation = { chr: string; start: number; end: number; strand: string };
@@ -56,11 +57,12 @@ export function SnornaTableClient({ rows, organismId, total }: { rows: SnoRow[];
   const sortedRows = useMemo(() => {
     const copy = [...filteredRows];
     copy.sort((a, b) => {
-      const left = a[sortKey];
-      const right = b[sortKey];
-      const cmp = typeof left === "number" && typeof right === "number"
-        ? left - right
-        : String(left).localeCompare(String(right));
+      const cmp =
+        sortKey === "snoRNAId"
+          ? compareSnornaIds(a.snoRNAId, b.snoRNAId)
+          : typeof a[sortKey] === "number" && typeof b[sortKey] === "number"
+            ? (a[sortKey] as number) - (b[sortKey] as number)
+            : String(a[sortKey]).localeCompare(String(b[sortKey]));
       return sortAsc ? cmp : -cmp;
     });
     return copy;
