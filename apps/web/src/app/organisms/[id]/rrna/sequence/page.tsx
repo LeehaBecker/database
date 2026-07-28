@@ -3,6 +3,7 @@ import { apiFetch } from "@/lib/api";
 import { CopyButton } from "@/components/copy-button";
 import { RrnaSequenceInteractive } from "@/components/rrna-sequence-interactive";
 import { PageShell } from "@/components/site-breadcrumbs";
+import { tritrypdbAppUrl } from "@/lib/organism-genome-references";
 
 type RrnaUnit = { id: string; subunit: string; start: number; end: number; sequence?: string | null };
 type ModRow = { rrnaSubunit: string; count: number; snoRna: { snornaId: string } | null };
@@ -30,7 +31,19 @@ export default async function RrnaSequencePage({ params }: { params: Promise<{ i
         Back to rRNA cards
       </Link>
       <section className="rounded-xl border bg-white p-4">
-        <h1 className="text-2xl font-bold">rRNA Sequence</h1>
+        <div className="mb-2 flex items-start justify-between gap-4">
+          <h1 className="text-2xl font-bold">rRNA Sequence</h1>
+          {id === "trypanosoma-brucei" ? (
+            <a
+              href={tritrypdbAppUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="shrink-0 text-sm text-blue-700 underline"
+            >
+              Reference
+            </a>
+          ) : null}
+        </div>
         <div className="mt-3 flex h-10 overflow-hidden rounded">
           {data.units.map((unit, index) => (
             <div key={unit.id} className={`flex-1 text-center text-xs leading-10 ${unitColors[index % unitColors.length].bar}`}>

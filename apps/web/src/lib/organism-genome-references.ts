@@ -1,3 +1,4 @@
+export const tritrypdbAppUrl = "https://tritrypdb.org/tritrypdb/app/";
 export const tritrypdbDownloadsUrl = "https://tritrypdb.org/tritrypdb/app/downloads";
 
 export const organismNcbiGenomeReferenceUrls: Record<string, string> = {
