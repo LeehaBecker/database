@@ -22,6 +22,7 @@ const LABELS: Record<string, string> = {
   "genome-browser": "Genome Browser",
   interactions: "Interactions",
   homologs: "Homolog Explorer",
+  compare: "Compare",
   "fasta-fetch": "FASTA Fetch",
   "motif-search": "Motif Search",
   "coordinate-converter": "Coordinate Converter",

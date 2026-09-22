@@ -39,39 +39,35 @@ function formatEvalue(eValue: string): string {
   return value.toString();
 }
 
-function padPosition(value: number, width = 12): string {
-  return value.toLocaleString().padStart(width);
+function formatAlignmentLine(label: string, start: number, seq: string, end: number, labelWidth: number, posWidth: number): string {
+  return `${label.padEnd(labelWidth)}  ${String(start).padStart(posWidth)} ${seq}  ${end}`;
 }
 
-function AlignmentSegment({ segment }: { segment: BlastAlignmentSegment }) {
+export function AlignmentSegment({
+  segment,
+  queryLabel = "Query",
+  subjectLabel = "Sbjct",
+}: {
+  segment: BlastAlignmentSegment;
+  queryLabel?: string;
+  subjectLabel?: string;
+}) {
+  const labelWidth = Math.max(5, queryLabel.length, subjectLabel.length);
   const posWidth = Math.max(
-    12,
+    8,
     String(segment.queryStart).length,
     String(segment.queryEnd).length,
-    padPosition(segment.subjectStart).trim().length,
-    padPosition(segment.subjectEnd).trim().length,
+    String(segment.subjectStart).length,
+    String(segment.subjectEnd).length,
   );
+  const matchIndent = `${"".padEnd(labelWidth)}  ${"".padStart(posWidth)} `;
 
   return (
-    <div
-      className="grid items-baseline gap-x-2 font-mono text-xs leading-relaxed text-slate-900"
-      style={{ gridTemplateColumns: `4.5rem ${posWidth}ch 1fr ${posWidth}ch` }}
-    >
-      <span>Query</span>
-      <span className="text-right tabular-nums">{segment.queryStart}</span>
-      <span className="break-all">{segment.querySeq}</span>
-      <span className="text-right tabular-nums">{segment.queryEnd}</span>
-
-      <span aria-hidden="true" />
-      <span aria-hidden="true" />
-      <span className="break-all">{segment.matchLine}</span>
-      <span aria-hidden="true" />
-
-      <span>Sbjct</span>
-      <span className="text-right tabular-nums">{padPosition(segment.subjectStart, posWidth)}</span>
-      <span className="break-all">{segment.subjectSeq}</span>
-      <span className="text-right tabular-nums">{padPosition(segment.subjectEnd, posWidth)}</span>
-    </div>
+    <pre className="overflow-x-auto font-mono text-xs leading-5 text-slate-900 whitespace-pre">
+      {`${formatAlignmentLine(queryLabel, segment.queryStart, segment.querySeq, segment.queryEnd, labelWidth, posWidth)}
+${matchIndent}${segment.matchLine}
+${formatAlignmentLine(subjectLabel, segment.subjectStart, segment.subjectSeq, segment.subjectEnd, labelWidth, posWidth)}`}
+    </pre>
   );
 }
 

@@ -17,7 +17,7 @@ const endpoints = [
   { method: "GET", path: "/tools/interactions?mode=byPosition&species=&subunit=&position=", description: "Guiding snoRNAs for rRNA position" },
   { method: "GET", path: "/tools/interactions?mode=bySnorna&species=&snornaId=", description: "rRNA targets for a snoRNA" },
   { method: "GET", path: "/tools/homologs?boxType=&search=", description: "Cross-species homolog pairs (TB↔LM)" },
-  { method: "GET", path: "/tools/homologs/compare?tbId=&lmId=", description: "Compare two homolog sequences" },
+  { method: "GET", path: "/tools/homologs/compare?tbId=&lmId=", description: "Needle pairwise alignment of two homologs (NCBI-style segments + identity)" },
   { method: "POST", path: "/tools/sequence/fasta-fetch", description: "Body: { ids: string[] } → multi-FASTA" },
   { method: "GET", path: "/tools/sequence/motif-search?type=cd-box|aca|custom&q=", description: "Motif search across snoRNAs" },
   { method: "GET", path: "/tools/sequence/coordinate-converter?species=&subunit=&position=", description: "rRNA coordinate conversion" },

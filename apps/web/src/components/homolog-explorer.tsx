@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PUBLIC_API_BASE } from "@/lib/api";
-import { NeedlePairwise } from "@/components/needle-pairwise";
 
 type Pair = {
   tbId: string;
@@ -16,6 +15,10 @@ type Pair = {
   tbSingleCopy: string | null;
 };
 
+function compareHref(tbId: string, lmId: string) {
+  return `/tools/homologs/compare?tbId=${encodeURIComponent(tbId)}&lmId=${encodeURIComponent(lmId)}`;
+}
+
 export function HomologExplorer() {
   const [pairs, setPairs] = useState<Pair[]>([]);
   const [total, setTotal] = useState(0);
@@ -24,7 +27,6 @@ export function HomologExplorer() {
   const [search, setSearch] = useState("");
   const [singleCopyOnly, setSingleCopyOnly] = useState(false);
   const [hasLmHomolog, setHasLmHomolog] = useState(true);
-  const [selectedPair, setSelectedPair] = useState<{ tb: string; lm: string; identity: number } | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -42,16 +44,6 @@ export function HomologExplorer() {
     };
     load();
   }, [boxType, search, singleCopyOnly, hasLmHomolog]);
-
-  const comparePair = async (tbId: string, lmId: string) => {
-    const res = await fetch(`${PUBLIC_API_BASE}/tools/homologs/compare?tbId=${encodeURIComponent(tbId)}&lmId=${encodeURIComponent(lmId)}`);
-    const data = await res.json();
-    setSelectedPair({
-      tb: typeof data.alignedTb === "string" ? data.alignedTb : data.tb.sequence,
-      lm: typeof data.alignedLm === "string" ? data.alignedLm : data.lm.sequence,
-      identity: data.identity,
-    });
-  };
 
   return (
     <div className="space-y-6">
@@ -100,9 +92,9 @@ export function HomologExplorer() {
                   <td className="p-3">{pair.identity != null ? `${pair.identity}%` : "—"}</td>
                   <td className="p-3">
                     {pair.lmId && (
-                      <button type="button" className="text-xs text-cyan-700 underline" onClick={() => comparePair(pair.tbId, pair.lmId!)}>
+                      <Link href={compareHref(pair.tbId, pair.lmId)} className="text-xs text-cyan-700 underline">
                         Compare
-                      </button>
+                      </Link>
                     )}
                   </td>
                 </tr>
@@ -110,16 +102,6 @@ export function HomologExplorer() {
             </tbody>
           </table>
         </div>
-      )}
-
-      {selectedPair && (
-        <section className="rounded-2xl border bg-white p-4 shadow-sm">
-          <h2 className="font-semibold">Needle alignment ({selectedPair.identity}% identity)</h2>
-          <p className="mt-1 text-xs text-slate-500">EMBOSS needle (Needleman–Wunsch) global alignment</p>
-          <div className="mt-3">
-            <NeedlePairwise tb={selectedPair.tb} lm={selectedPair.lm} />
-          </div>
-        </section>
       )}
     </div>
   );

@@ -48,7 +48,7 @@ function buildMatchLine(qseq: string, sseq: string): string {
   return line;
 }
 
-function countGapColumns(qseq: string, sseq: string): number {
+export function countGapColumns(qseq: string, sseq: string): number {
   let gaps = 0;
   for (let i = 0; i < qseq.length; i++) {
     if ((qseq[i] ?? "") === "-" || (sseq[i] ?? "") === "-") gaps++;

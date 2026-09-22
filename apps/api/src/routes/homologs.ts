@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../lib/db.js";
+import { countGapColumns, wrapAlignment } from "../lib/blast-alignment.js";
 import { needleAlign } from "../lib/needle-align.js";
 
 export const homologsRouter = Router();
@@ -137,6 +138,8 @@ homologsRouter.get("/compare", async (req, res) => {
   }
 
   const alignment = needleAlign(tb.sequence, lm.sequence);
+  const queryEnd = alignment.alignedA.replaceAll("-", "").length || 1;
+  const subjectEnd = alignment.alignedB.replaceAll("-", "").length || 1;
 
   res.json({
     tb: {
@@ -158,5 +161,7 @@ homologsRouter.get("/compare", async (req, res) => {
     alignedLm: alignment.alignedB,
     identities: alignment.identities,
     alignmentLength: alignment.alignmentLength,
+    gapColumns: countGapColumns(alignment.alignedA, alignment.alignedB),
+    segments: wrapAlignment(alignment.alignedA, alignment.alignedB, 1, queryEnd, 1, subjectEnd),
   });
 });

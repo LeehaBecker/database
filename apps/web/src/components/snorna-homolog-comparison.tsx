@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { PUBLIC_API_BASE } from "@/lib/api";
-import { NeedlePairwise } from "@/components/needle-pairwise";
+
+function compareHref(tbId: string, lmId: string) {
+  return `/tools/homologs/compare?tbId=${encodeURIComponent(tbId)}&lmId=${encodeURIComponent(lmId)}`;
+}
 
 export function SnornaHomologComparison({
   tbIds,
@@ -14,34 +15,8 @@ export function SnornaHomologComparison({
   lmIds: string[];
   ldIds: string[];
 }) {
-  const [comparison, setComparison] = useState<{
-    tbId: string;
-    lmId: string;
-    tbSeq: string;
-    lmSeq: string;
-    identity: number;
-  } | null>(null);
-
-  useEffect(() => {
-    const tbId = tbIds[0];
-    const lmId = lmIds[0];
-    if (!tbId || !lmId) return;
-
-    fetch(`${PUBLIC_API_BASE}/tools/homologs/compare?tbId=${encodeURIComponent(tbId)}&lmId=${encodeURIComponent(lmId)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.tb && data.lm) {
-          setComparison({
-            tbId: data.tb.snornaId,
-            lmId: data.lm.snornaId,
-            tbSeq: typeof data.alignedTb === "string" ? data.alignedTb : data.tb.sequence.replaceAll("T", "U"),
-            lmSeq: typeof data.alignedLm === "string" ? data.alignedLm : data.lm.sequence.replaceAll("T", "U"),
-            identity: data.identity,
-          });
-        }
-      })
-      .catch(() => undefined);
-  }, [tbIds, lmIds]);
+  const tbId = tbIds[0];
+  const lmId = lmIds[0];
 
   return (
     <section className="rounded-xl border bg-white p-4 space-y-4">
@@ -90,15 +65,12 @@ export function SnornaHomologComparison({
         <p className="text-sm text-slate-500">No homolog available</p>
       )}
 
-      {comparison && (
+      {tbId && lmId && (
         <div className="border-t pt-4">
-          <h3 className="text-sm font-semibold">
-            Needle alignment: {comparison.tbId} ↔ {comparison.lmId} ({comparison.identity}% identity)
-          </h3>
-          <div className="mt-2">
-            <NeedlePairwise tb={comparison.tbSeq} lm={comparison.lmSeq} />
-          </div>
-          <Link href="/tools/homologs" className="mt-2 inline-block text-xs text-cyan-700 underline">
+          <Link href={compareHref(tbId, lmId)} className="text-sm text-cyan-700 underline">
+            Compare {tbId} ↔ {lmId} alignment
+          </Link>
+          <Link href="/tools/homologs" className="mt-2 block text-xs text-cyan-700 underline">
             Open Homolog Explorer
           </Link>
         </div>
