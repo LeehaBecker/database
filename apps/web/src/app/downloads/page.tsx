@@ -7,7 +7,7 @@ export default function DownloadsPage() {
     <PageShell className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Download Center</h1>
-        <p className="mt-2 text-slate-600">Bulk export of snoRNA-BIU data per organism.</p>
+        <p className="mt-2 text-slate-600">Bulk export of snoBIU data per organism.</p>
       </div>
       {ORGANISMS.map((org) => (
         <section key={org.slug} className="rounded-2xl border bg-white p-6 shadow-sm">

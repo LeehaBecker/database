@@ -1,7 +1,7 @@
 {
   "name": "snorna-database",
   "version": "1.0.0",
-  "description": "snoRNA-BIU biological database monorepo",
+  "description": "snoBIU biological database monorepo",
   "scripts": {
     "dev": "npm run dev -w apps/api",
     "dev:web": "npm run dev -w apps/web",
@@ -19,7 +19,7 @@
     "bioinformatics",
     "database"
   ],
-  "author": "snoRNA-BIU",
+  "author": "snoBIU",
   "license": "ISC",
   "private": true,
   "workspaces": [

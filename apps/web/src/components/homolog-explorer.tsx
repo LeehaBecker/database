@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PUBLIC_API_BASE } from "@/lib/api";
+import { NeedlePairwise } from "@/components/needle-pairwise";
 
 type Pair = {
   tbId: string;
@@ -45,7 +46,11 @@ export function HomologExplorer() {
   const comparePair = async (tbId: string, lmId: string) => {
     const res = await fetch(`${PUBLIC_API_BASE}/tools/homologs/compare?tbId=${encodeURIComponent(tbId)}&lmId=${encodeURIComponent(lmId)}`);
     const data = await res.json();
-    setSelectedPair({ tb: data.tb.sequence, lm: data.lm.sequence, identity: data.identity });
+    setSelectedPair({
+      tb: typeof data.alignedTb === "string" ? data.alignedTb : data.tb.sequence,
+      lm: typeof data.alignedLm === "string" ? data.alignedLm : data.lm.sequence,
+      identity: data.identity,
+    });
   };
 
   return (
@@ -109,10 +114,10 @@ export function HomologExplorer() {
 
       {selectedPair && (
         <section className="rounded-2xl border bg-white p-4 shadow-sm">
-          <h2 className="font-semibold">Sequence comparison ({selectedPair.identity}% identity)</h2>
-          <div className="mt-3 grid gap-4 md:grid-cols-2">
-            <pre className="max-h-40 overflow-auto rounded bg-cyan-50 p-3 text-xs break-all">{selectedPair.tb}</pre>
-            <pre className="max-h-40 overflow-auto rounded bg-emerald-50 p-3 text-xs break-all">{selectedPair.lm}</pre>
+          <h2 className="font-semibold">Needle alignment ({selectedPair.identity}% identity)</h2>
+          <p className="mt-1 text-xs text-slate-500">EMBOSS needle (Needleman–Wunsch) global alignment</p>
+          <div className="mt-3">
+            <NeedlePairwise tb={selectedPair.tb} lm={selectedPair.lm} />
           </div>
         </section>
       )}

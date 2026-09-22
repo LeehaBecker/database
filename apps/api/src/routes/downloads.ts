@@ -108,7 +108,7 @@ downloadsRouter.get("/bundle.txt", async (req, res) => {
   ]);
 
   const parts = [
-    `# snoRNA-BIU data bundle: ${organism.name}`,
+    `# snoBIU data bundle: ${organism.name}`,
     `# Generated from database export`,
     "",
     "=== snornas.fasta ===",

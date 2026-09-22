@@ -1,4 +1,4 @@
-# snoRNA-BIU
+# snoBIU
 
 Kinetoplastid snoRNA and rRNA modification database (Bar-Ilan University).
 

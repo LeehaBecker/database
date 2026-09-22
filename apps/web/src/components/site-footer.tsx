@@ -6,7 +6,7 @@ export function SiteFooter() {
     <footer className="mt-auto border-t border-slate-200 bg-slate-50">
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 text-sm text-slate-600 md:grid-cols-3 lg:px-6">
         <div>
-          <p className="font-semibold text-slate-900">snoRNA-BIU</p>
+          <p className="font-semibold text-slate-900">snoBIU</p>
           <p className="mt-2">Non-coding RNA sequence database for kinetoplastid parasites.</p>
           <p className="mt-2 text-xs">Bar-Ilan University</p>
         </div>
@@ -27,7 +27,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-slate-200 py-3 text-center text-xs text-slate-500">
-        © {new Date().getFullYear()} snoRNA-BIU · Kinetoplastid snoRNA/rRNA research database
+        © {new Date().getFullYear()} snoBIU · Kinetoplastid snoRNA/rRNA research database
       </div>
     </footer>
   );

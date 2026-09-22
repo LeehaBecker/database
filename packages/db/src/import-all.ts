@@ -378,13 +378,9 @@ async function main() {
           count: Number(pick(row, "count") || 0),
           bp: pick(row, "BP") || null,
           modType,
-          ...(source === "Nm"
-            ? {
-                experimentallyValidated: pick(row, "Experimentally validated") || null,
-                mappedTo: pick(row, "Mapped to") || null,
-                reference: pick(row, "Reference") || null,
-              }
-            : {}),
+          experimentallyValidated: pick(row, "Experimentally validated") || null,
+          mappedTo: pick(row, "Mapped to") || null,
+          reference: pick(row, "Reference") || null,
         },
       });
     }

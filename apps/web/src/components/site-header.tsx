@@ -45,7 +45,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-50 border-b border-cyan-200/70 bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 lg:px-6">
         <Link href="/" className="shrink-0 text-lg font-bold text-cyan-900">
-          snoRNA-BIU
+          snoBIU
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">

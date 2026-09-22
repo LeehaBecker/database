@@ -35,7 +35,7 @@ export function HomePortal({ stats }: { stats: Stats }) {
   return (
     <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 lg:px-6">
       <section className="rounded-3xl border border-cyan-200/70 bg-gradient-to-r from-sky-100 via-cyan-50 to-indigo-100 p-8 shadow-sm">
-        <h1 className="text-4xl font-bold text-slate-900 md:text-5xl">Welcome to snoRNA-BIU</h1>
+        <h1 className="text-4xl font-bold text-slate-900 md:text-5xl">Welcome to snoBIU</h1>
         <p className="mt-2 text-lg text-slate-700">Kinetoplastid snoRNA and rRNA modification database</p>
         <p className="mt-1 text-sm text-slate-600">Dataset: {stats.datasetVersion}</p>
         <form

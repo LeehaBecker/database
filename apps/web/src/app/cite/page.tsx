@@ -2,11 +2,11 @@ import Link from "next/link";
 import { PageShell } from "@/components/site-breadcrumbs";
 import { CopyButton } from "@/components/copy-button";
 
-const bibtex = `@misc{snorna_biu,
-  title  = {snoRNA-BIU: Kinetoplastid snoRNA and rRNA Modification Database},
+const bibtex = `@misc{snobiu,
+  title  = {snoBIU: Kinetoplastid snoRNA and rRNA Modification Database},
   author = {Bar-Ilan University},
   year   = {2026},
-  url    = {https://snorna-biu.example.org}
+  url    = {https://snobiu.example.org}
 }`;
 
 export default function CitePage() {
@@ -16,8 +16,8 @@ export default function CitePage() {
       <section className="rounded-2xl border bg-white p-6 shadow-sm space-y-3">
         <h2 className="text-xl font-semibold">Recommended citation</h2>
         <p className="text-sm leading-relaxed">
-          Bar-Ilan University. snoRNA-BIU: Kinetoplastid snoRNA and rRNA Modification Database.
-          Available at: snoRNA-BIU web portal. Accessed {new Date().toISOString().slice(0, 10)}.
+          Bar-Ilan University. snoBIU: Kinetoplastid snoRNA and rRNA Modification Database.
+          Available at: snoBIU web portal. Accessed {new Date().toISOString().slice(0, 10)}.
         </p>
       </section>
       <section className="rounded-2xl border bg-white p-6 shadow-sm space-y-3">

@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "snoRNA-BIU",
+  title: "snoBIU",
   description: "The non-coding RNA sequence database for kinetoplastid parasites",
 };
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PUBLIC_API_BASE } from "@/lib/api";
+import { NeedlePairwise } from "@/components/needle-pairwise";
 
 export function SnornaHomologComparison({
   tbIds,
@@ -33,8 +34,8 @@ export function SnornaHomologComparison({
           setComparison({
             tbId: data.tb.snornaId,
             lmId: data.lm.snornaId,
-            tbSeq: data.tb.sequence.replaceAll("T", "U"),
-            lmSeq: data.lm.sequence.replaceAll("T", "U"),
+            tbSeq: typeof data.alignedTb === "string" ? data.alignedTb : data.tb.sequence.replaceAll("T", "U"),
+            lmSeq: typeof data.alignedLm === "string" ? data.alignedLm : data.lm.sequence.replaceAll("T", "U"),
             identity: data.identity,
           });
         }
@@ -92,17 +93,10 @@ export function SnornaHomologComparison({
       {comparison && (
         <div className="border-t pt-4">
           <h3 className="text-sm font-semibold">
-            Side-by-side comparison: {comparison.tbId} ↔ {comparison.lmId} ({comparison.identity}% identity)
+            Needle alignment: {comparison.tbId} ↔ {comparison.lmId} ({comparison.identity}% identity)
           </h3>
-          <div className="mt-2 grid gap-3 md:grid-cols-2">
-            <div>
-              <p className="text-xs font-medium text-cyan-800">TB</p>
-              <pre className="mt-1 max-h-32 overflow-auto rounded bg-cyan-50 p-2 text-xs break-all">{comparison.tbSeq}</pre>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-emerald-800">LM</p>
-              <pre className="mt-1 max-h-32 overflow-auto rounded bg-emerald-50 p-2 text-xs break-all">{comparison.lmSeq}</pre>
-            </div>
+          <div className="mt-2">
+            <NeedlePairwise tb={comparison.tbSeq} lm={comparison.lmSeq} />
           </div>
           <Link href="/tools/homologs" className="mt-2 inline-block text-xs text-cyan-700 underline">
             Open Homolog Explorer

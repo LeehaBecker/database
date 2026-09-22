@@ -4,10 +4,10 @@ import { PageShell } from "@/components/site-breadcrumbs";
 export default function AboutPage() {
   return (
     <PageShell className="max-w-4xl space-y-6">
-      <h1 className="text-3xl font-bold">About snoRNA-BIU</h1>
+      <h1 className="text-3xl font-bold">About snoBIU</h1>
       <section className="rounded-2xl border bg-white p-6 shadow-sm space-y-3">
         <p>
-          snoRNA-BIU is a specialized database for small nucleolar RNAs (snoRNAs) and ribosomal RNA (rRNA)
+          snoBIU is a specialized database for small nucleolar RNAs (snoRNAs) and ribosomal RNA (rRNA)
           modification data in kinetoplastid parasites, developed at Bar-Ilan University.
         </p>
         <p>

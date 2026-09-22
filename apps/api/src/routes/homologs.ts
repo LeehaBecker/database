@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../lib/db.js";
+import { needleAlign } from "../lib/needle-align.js";
 
 export const homologsRouter = Router();
 
@@ -8,19 +9,6 @@ function parseCsvIds(value: string | null | undefined): string[] {
     .split(",")
     .map((item) => item.trim())
     .filter((item, index, arr) => item.length > 0 && arr.indexOf(item) === index);
-}
-
-function percentIdentity(a: string, b: string): number {
-  const left = a.toUpperCase().replaceAll("T", "U");
-  const right = b.toUpperCase().replaceAll("T", "U");
-  const len = Math.max(left.length, right.length);
-  if (!len) return 0;
-  let matches = 0;
-  const minLen = Math.min(left.length, right.length);
-  for (let i = 0; i < minLen; i += 1) {
-    if (left[i] === right[i]) matches += 1;
-  }
-  return Math.round((matches / len) * 100);
 }
 
 homologsRouter.get("/", async (req, res) => {
@@ -101,7 +89,7 @@ homologsRouter.get("/", async (req, res) => {
       boxType: tb.type,
       tbLength: tb.length,
       lmLength: lm?.length ?? null,
-      identity: lm ? percentIdentity(tb.sequence, lm.sequence) : null,
+      identity: lm ? needleAlign(tb.sequence, lm.sequence).identityPct : null,
       tbSingleCopy: tb.singleCopyGene,
       lmSingleCopy: lm?.singleCopyGene ?? null,
     });
@@ -148,6 +136,8 @@ homologsRouter.get("/compare", async (req, res) => {
     return;
   }
 
+  const alignment = needleAlign(tb.sequence, lm.sequence);
+
   res.json({
     tb: {
       snornaId: tb.snornaId,
@@ -163,6 +153,10 @@ homologsRouter.get("/compare", async (req, res) => {
       length: lm.length,
       organism: lm.organism.slug,
     },
-    identity: percentIdentity(tb.sequence, lm.sequence),
+    identity: alignment.identityPct,
+    alignedTb: alignment.alignedA,
+    alignedLm: alignment.alignedB,
+    identities: alignment.identities,
+    alignmentLength: alignment.alignmentLength,
   });
 });
