@@ -9,7 +9,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "lint": "tsc --noEmit",
-    "test": "echo \"No API tests yet\""
+    "test": "node --import tsx --test test/snorna-rrna-pairing.test.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.7.0",

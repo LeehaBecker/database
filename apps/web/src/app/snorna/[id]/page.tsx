@@ -13,6 +13,7 @@ import { SnornaSequenceViewer } from "@/components/snorna-sequence-viewer";
 import { CopyButton } from "@/components/copy-button";
 import { SnornaHomologComparison } from "@/components/snorna-homolog-comparison";
 import { PageShell } from "@/components/site-breadcrumbs";
+import { coordinateShiftForImage, coordinateShiftNote } from "@/lib/base-pairing-coordinate-shifts";
 
 type SnornaDetail = {
   snornaId: string;
@@ -225,11 +226,35 @@ export default async function SnornaDetailPage({ params }: { params: Promise<{ i
           <div className="space-y-4">
             {basePairingImages.map((imageUrl, index) => {
               const imageName = decodeURIComponent(imageUrl.split("/").pop() ?? `base-pairing-${index + 1}.png`);
+              const coordinateShift = coordinateShiftForImage(item.snornaId, index);
+              const coordinateShiftText = coordinateShift ? coordinateShiftNote(coordinateShift) : null;
+              const coordinateShiftNoteId = `coordinate-shift-${item.snornaId.replace(/[^A-Za-z0-9_-]/g, "")}-${index}`;
               return (
                 <article key={imageUrl} className="rounded border p-3">
-                  <a href={imageUrl} target="_blank" rel="noreferrer" className="block">
-                    <img src={imageUrl} alt={`Base pairing ${item.snornaId} ${index + 1}`} className="mx-auto w-full max-w-md rounded border bg-slate-50" loading="lazy" />
-                  </a>
+                  <div className="relative mx-auto w-full max-w-md">
+                    <a href={imageUrl} target="_blank" rel="noreferrer" className="block">
+                      <img src={imageUrl} alt={`Base pairing ${item.snornaId} ${index + 1}`} className="w-full rounded border bg-slate-50" loading="lazy" />
+                    </a>
+                    {coordinateShiftText ? (
+                      <div className="group absolute right-2 top-2 z-10">
+                        <button
+                          type="button"
+                          aria-label="Modification site coordinate shift"
+                          aria-describedby={coordinateShiftNoteId}
+                          className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-red-600 bg-white text-sm font-bold leading-none text-red-600"
+                        >
+                          !
+                        </button>
+                        <p
+                          id={coordinateShiftNoteId}
+                          role="tooltip"
+                          className="pointer-events-none absolute right-0 top-full z-20 mt-1 hidden w-56 max-w-[min(14rem,calc(100vw-3rem))] rounded border border-red-600 bg-white p-2 text-left text-xs leading-snug text-red-700 shadow group-hover:block group-focus-within:block"
+                        >
+                          {coordinateShiftText}
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
                     <a href={imageUrl} target="_blank" rel="noreferrer" className="text-blue-700 underline">
                       Open full size

@@ -8,7 +8,7 @@ export default function InteractionsPage() {
     <PageShell className="space-y-4">
       <div>
         <h1 className="text-3xl font-bold">snoRNA–rRNA Interaction Viewer</h1>
-        <p className="mt-2 text-slate-600">Find which snoRNAs guide rRNA modifications, or view all targets for a snoRNA.</p>
+        <p className="mt-2 text-slate-600">Browse a full rRNA subunit with every modification site marked in red and the snoRNA guides drawn where they pair. Scroll left and right along the sequence, hover a red letter to see which snoRNAs guide that modification, or search by position or snoRNA and select a result to see the base pairing.</p>
       </div>
       <Suspense fallback={<TableSkeleton rows={3} cols={4} />}>
         <InteractionsTool />
