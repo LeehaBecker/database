@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { prisma } from "./db.js";
 
 const ROOT_DATA = process.env.DATA_PATH ?? "C:/Users/ALEXANDER/Desktop/transfer-snorna-extracted/Site-db-data";
 
@@ -23,6 +24,29 @@ type GenomeCache = {
 };
 
 let cache: GenomeCache | null = null;
+let snornaFeatures: GenomeFeature[] | null = null;
+
+export async function ensureSnornaFeatures() {
+  if (snornaFeatures) return;
+  const rows = await prisma.genomicLocation.findMany({
+    include: { snoRna: { select: { snornaId: true, type: true } } },
+  });
+  snornaFeatures = rows.map((row) => ({
+    seqid: row.chr,
+    source: "snorna-db",
+    type: "snoRNA",
+    start: row.start,
+    end: row.end,
+    score: ".",
+    strand: row.strand || ".",
+    phase: ".",
+    attributes: {
+      gene_id: row.snoRna.snornaId,
+      gene_name: row.snoRna.snornaId,
+      snorna_class: row.snoRna.type,
+    },
+  }));
+}
 
 function parseAttributes(raw: string): Record<string, string> {
   const result: Record<string, string> = {};
@@ -104,18 +128,21 @@ export function getGenomeCache(): GenomeCache {
   return cache;
 }
 
-export function queryFeatures(chrom: string, start: number, end: number, search?: string) {
+export function queryFeatures(chrom: string, start: number, end: number, search?: string, types?: string[]) {
   const data = getGenomeCache();
-  const list = data.byChrom.get(chrom) ?? [];
+  const allowed = types ? new Set(types) : null;
+  const list = [...(data.byChrom.get(chrom) ?? []), ...(snornaFeatures ?? []).filter((feature) => feature.seqid === chrom)];
   const q = (search ?? "").trim().toLowerCase();
   return list
     .filter((feature) => feature.end >= start && feature.start <= end)
+    .filter((feature) => (allowed ? allowed.has(feature.type) : true))
     .filter((feature) => {
       if (!q) return true;
       const id = (feature.attributes.gene_id ?? feature.attributes.transcript_id ?? "").toLowerCase();
       const name = (feature.attributes.gene_name ?? "").toLowerCase();
       const description = (feature.attributes.description ?? "").toLowerCase();
-      return id.includes(q) || name.includes(q) || description.includes(q) || feature.type.toLowerCase().includes(q);
+      const snornaClass = (feature.attributes.snorna_class ?? "").toLowerCase();
+      return id.includes(q) || name.includes(q) || description.includes(q) || snornaClass.includes(q) || feature.type.toLowerCase().includes(q);
     });
 }
 
@@ -132,11 +159,12 @@ export function searchGenome(term: string) {
   const data = getGenomeCache();
   const q = term.trim().toLowerCase();
   if (!q) return [];
-  return data.features
+  return [...data.features, ...(snornaFeatures ?? [])]
     .filter((feature) => {
       const id = (feature.attributes.gene_id ?? feature.attributes.transcript_id ?? "").toLowerCase();
       const name = (feature.attributes.gene_name ?? "").toLowerCase();
-      return id.includes(q) || name.includes(q);
+      const snornaClass = (feature.attributes.snorna_class ?? "").toLowerCase();
+      return id.includes(q) || name.includes(q) || snornaClass.includes(q);
     })
     .slice(0, 100)
     .map((feature) => ({

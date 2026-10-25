@@ -98,7 +98,7 @@ export function HomePortal({ stats }: { stats: Stats }) {
               Genome Browser (local)
             </Link>
             <Link className="block rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 transition hover:bg-violet-100" href="/tools/blast">
-              BLAST
+              sno-BLAST
             </Link>
             <Link className="block rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 transition hover:bg-violet-100" href="/tools/interactions">
               snoRNA–rRNA Interactions

@@ -8,13 +8,13 @@ import { ORGANISMS } from "@/lib/site-config";
 
 const toolLinks = [
   { href: "/tools", label: "Tools Hub" },
-  { href: "/tools/blast", label: "BLAST" },
+  { href: "/tools/blast", label: "sno-BLAST" },
   { href: "/tools/genome-browser", label: "Genome Browser" },
   { href: "/tools/interactions", label: "snoRNA–rRNA Interactions" },
   { href: "/tools/homologs", label: "Homolog Explorer" },
   { href: "/tools/fasta-fetch", label: "FASTA Fetch" },
   { href: "/tools/motif-search", label: "Motif Search" },
-  { href: "/tools/coordinate-converter", label: "Coordinate Converter" },
+  { href: "/tools/coordinate-converter", label: "rRNA Coordinate Converter" },
 ];
 
 const infoLinks = [

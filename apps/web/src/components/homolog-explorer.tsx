@@ -26,7 +26,7 @@ export function HomologExplorer() {
   const [boxType, setBoxType] = useState("");
   const [search, setSearch] = useState("");
   const [singleCopyOnly, setSingleCopyOnly] = useState(false);
-  const [hasLmHomolog, setHasLmHomolog] = useState(true);
+  const [hasLmHomolog, setHasLmHomolog] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -64,7 +64,7 @@ export function HomologExplorer() {
             Has LM homolog
           </label>
         </div>
-        <p className="mt-3 text-sm text-slate-600">{total} homolog pairs · LD IDs shown as text (organism page coming soon)</p>
+        <p className="mt-3 text-sm text-slate-600">{total} snoRNAs · LD IDs shown as text (organism page coming soon)</p>
       </div>
 
       {loading ? (
@@ -86,7 +86,7 @@ export function HomologExplorer() {
               {pairs.map((pair) => (
                 <tr key={`${pair.tbId}-${pair.lmId}`} className="border-t">
                   <td className="p-3"><Link href={`/snorna/${pair.tbId}`} className="text-blue-700 underline">{pair.tbId}</Link></td>
-                  <td className="p-3">{pair.lmId ? <Link href={`/snorna/${pair.lmId}`} className="text-blue-700 underline">{pair.lmId}</Link> : "—"}</td>
+                  <td className="p-3">{pair.lmId ? <Link href={`/snorna/${pair.lmId}`} className="text-blue-700 underline">{pair.lmId}</Link> : "Not Found"}</td>
                   <td className="p-3 text-xs">{pair.ldIds.length ? pair.ldIds.join(", ") : "—"}</td>
                   <td className="p-3">{pair.boxType}</td>
                   <td className="p-3">{pair.identity != null ? `${pair.identity}%` : "—"}</td>

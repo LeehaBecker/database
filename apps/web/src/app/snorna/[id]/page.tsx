@@ -158,8 +158,8 @@ export default async function SnornaDetailPage({ params }: { params: Promise<{ i
           <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
             <span className="inline-flex items-center gap-1"><i className="h-3 w-3 bg-teal-500 inline-block" /> C box</span>
             <span className="inline-flex items-center gap-1"><i className="h-3 w-3 bg-blue-500 inline-block" /> D box</span>
-            <span className="inline-flex items-center gap-1"><i className="h-3 w-3 bg-green-500 inline-block" /> Target 1</span>
-            <span className="inline-flex items-center gap-1"><i className="h-3 w-3 bg-red-500 inline-block" /> Target 2</span>
+            <span className="inline-flex items-center gap-1"><i className="h-3 w-3 bg-green-500 inline-block" /> Binding site 1</span>
+            <span className="inline-flex items-center gap-1"><i className="h-3 w-3 bg-red-500 inline-block" /> Binding site 2</span>
             <span className="inline-flex items-center gap-1"><i className="h-3 w-3 bg-amber-400 inline-block" /> H/ACA pockets</span>
             <span className="inline-flex items-center gap-1"><i className="h-3 w-3 bg-purple-400 inline-block" /> H/ACA stems</span>
           </div>

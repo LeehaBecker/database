@@ -25,6 +25,16 @@ type SearchHit = {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
+const TRACK_OPTIONS = [
+  { label: "Gene", type: "gene" },
+  { label: "mRNA", type: "transcript" },
+  { label: "Exon", type: "exon" },
+  { label: "CDS", type: "CDS" },
+  { label: "snoRNA", type: "snoRNA" },
+] as const;
+
+const DEFAULT_TYPES = TRACK_OPTIONS.map((option) => option.type);
+
 export default function GenomeBrowserClient() {
   const searchParams = useSearchParams();
   const [chromosomes, setChromosomes] = useState<Chromosome[]>([]);
@@ -36,11 +46,12 @@ export default function GenomeBrowserClient() {
   const [sequence, setSequence] = useState("");
   const [searchHits, setSearchHits] = useState<SearchHit[]>([]);
   const [selected, setSelected] = useState<Feature | null>(null);
+  const [visibleTypes, setVisibleTypes] = useState<string[]>([...DEFAULT_TYPES]);
 
-  const loadWindow = async (nextChrom: string, nextStart: number, nextEnd: number, searchTerm = search) => {
+  const loadWindow = async (nextChrom: string, nextStart: number, nextEnd: number, searchTerm = search, types = visibleTypes) => {
     const [featuresRes, sequenceRes] = await Promise.all([
       fetch(
-        `${API_BASE}/tools/genome-browser/features?chrom=${encodeURIComponent(nextChrom)}&start=${nextStart}&end=${nextEnd}&search=${encodeURIComponent(searchTerm)}`,
+        `${API_BASE}/tools/genome-browser/features?chrom=${encodeURIComponent(nextChrom)}&start=${nextStart}&end=${nextEnd}&search=${encodeURIComponent(searchTerm)}&types=${encodeURIComponent(types.join(","))}`,
       ),
       fetch(`${API_BASE}/tools/genome-browser/sequence?chrom=${encodeURIComponent(nextChrom)}&start=${nextStart}&end=${nextEnd}`),
     ]);
@@ -86,7 +97,7 @@ export default function GenomeBrowserClient() {
     [start, windowSize],
   );
   const tracks = useMemo(() => {
-    const base = { gene: 0, transcript: 1, exon: 2, CDS: 3 } as Record<string, number>;
+    const base = { gene: 0, transcript: 1, exon: 2, CDS: 3, snoRNA: 4 } as Record<string, number>;
     return features.map((feature) => {
       const left = ((feature.start - start) / windowSize) * 100;
       const width = ((feature.end - feature.start + 1) / windowSize) * 100;
@@ -149,7 +160,7 @@ export default function GenomeBrowserClient() {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           className="w-full rounded border p-3"
-          placeholder="Search by gene/transcript ID, name, feature type"
+          placeholder="Search by gene, transcript, or snoRNA id"
         />
         <div className="grid gap-3 md:grid-cols-4">
           <select
@@ -197,11 +208,35 @@ export default function GenomeBrowserClient() {
 
       <section className="rounded-xl border bg-white p-4">
         <div className="mb-2 flex flex-wrap items-center gap-3 text-xs">
-          <span className="inline-flex items-center gap-1"><i className="h-2.5 w-2.5 rounded bg-cyan-600" /> Gene</span>
-          <span className="inline-flex items-center gap-1"><i className="h-2.5 w-2.5 rounded bg-blue-600" /> Transcript</span>
-          <span className="inline-flex items-center gap-1"><i className="h-2.5 w-2.5 rounded bg-emerald-600" /> Exon</span>
-          <span className="inline-flex items-center gap-1"><i className="h-2.5 w-2.5 rounded bg-violet-600" /> CDS</span>
-          <span className="text-slate-500">Lane order: gene → transcript → exon → CDS</span>
+          {TRACK_OPTIONS.map((option) => (
+            <label key={option.type} className="inline-flex items-center gap-1">
+              <input
+                type="checkbox"
+                checked={visibleTypes.includes(option.type)}
+                onChange={(event) => {
+                  const next = event.target.checked
+                    ? [...visibleTypes, option.type]
+                    : visibleTypes.filter((type) => type !== option.type);
+                  setVisibleTypes(next);
+                  if (chrom) void loadWindow(chrom, start, end, search, next);
+                }}
+              />
+              <i
+                className={`h-2.5 w-2.5 rounded ${
+                  option.type === "gene"
+                    ? "bg-cyan-600"
+                    : option.type === "transcript"
+                      ? "bg-blue-600"
+                      : option.type === "exon"
+                        ? "bg-emerald-600"
+                        : option.type === "CDS"
+                          ? "bg-violet-600"
+                          : "bg-amber-600"
+                }`}
+              />
+              {option.label}
+            </label>
+          ))}
         </div>
         <p className="mb-2 text-sm text-slate-600">
           Coordinates: {chrom}:{start}-{end} ({windowSize.toLocaleString()} nt)
@@ -214,7 +249,7 @@ export default function GenomeBrowserClient() {
             </div>
           ))}
         </div>
-        <div className="relative h-64 overflow-hidden rounded border bg-slate-50">
+        <div className="relative h-72 overflow-hidden rounded border bg-slate-50">
           {[0, 1, 2, 3, 4].map((lane) => (
             <div key={lane} className="absolute left-0 right-0 border-t border-dashed border-slate-200" style={{ top: `${lane * 20 + 16}%` }} />
           ))}
@@ -230,7 +265,9 @@ export default function GenomeBrowserClient() {
                       ? "bg-emerald-600"
                       : feature.type === "CDS"
                         ? "bg-violet-600"
-                        : "bg-slate-600"
+                        : feature.type === "snoRNA"
+                          ? "bg-amber-600"
+                          : "bg-slate-600"
               }`}
               style={{ left: `${feature.left}%`, width: `${feature.width}%`, top: `${feature.lane * 20 + 12}%` }}
               onClick={() => setSelected(feature)}
@@ -264,6 +301,11 @@ export default function GenomeBrowserClient() {
               <p>
                 <b>Name:</b> {selected.attributes.gene_name ?? "Not Known"}
               </p>
+              {selected.type === "snoRNA" ? (
+                <p>
+                  <b>Class:</b> {selected.attributes.snorna_class ?? "Not Known"}
+                </p>
+              ) : null}
             </div>
           ) : (
             <p className="text-sm text-slate-500">Click a feature in tracks to inspect annotations.</p>

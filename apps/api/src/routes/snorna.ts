@@ -181,6 +181,77 @@ snornaRouter.get("/clusters", async (req, res) => {
   });
 });
 
+const CLUSTER_GAP_NT = 1000;
+
+snornaRouter.get("/clusters/updated", async (req, res) => {
+  const species = String(req.query.species ?? "trypanosoma-brucei");
+  const organism = await prisma.organism.findUnique({ where: { slug: species } });
+  if (!organism) {
+    res.status(404).json({ error: "organism not found" });
+    return;
+  }
+
+  const locations = await prisma.genomicLocation.findMany({
+    where: { snoRna: { organismId: organism.id } },
+    include: { snoRna: { select: { snornaId: true, type: true } } },
+    orderBy: [{ chr: "asc" }, { start: "asc" }, { end: "asc" }],
+  });
+
+  const clusters: Array<{
+    clusterId: number;
+    coordinates: string | null;
+    repeatedInGenome: number | null;
+    referenceUrl: string | null;
+    items: Array<{
+      snornaId: string;
+      linkedSnornaId: string | null;
+      isAvailable: boolean;
+      boxType: string | null;
+      geneLengthNt: number | null;
+      intergenicLengthNt: string | null;
+      coordinatesList: string[];
+    }>;
+  }> = [];
+
+  let clusterId = 0;
+  let previous: (typeof locations)[number] | null = null;
+
+  for (const location of locations) {
+    const gap = previous ? location.start - previous.end - 1 : Number.POSITIVE_INFINITY;
+    const sameChromosome = previous?.chr === location.chr;
+    if (!previous || !sameChromosome || gap > CLUSTER_GAP_NT) {
+      clusterId += 1;
+      clusters.push({
+        clusterId,
+        coordinates: location.chr,
+        repeatedInGenome: null,
+        referenceUrl: null,
+        items: [],
+      });
+    }
+    const cluster = clusters[clusters.length - 1];
+    const coordinate = `${location.chr}:${location.start}-${location.end} (${location.strand})`;
+    if (cluster.items.length > 0 && sameChromosome && gap <= CLUSTER_GAP_NT) {
+      cluster.items[cluster.items.length - 1].intergenicLengthNt = String(Math.max(gap, 0));
+    }
+    cluster.items.push({
+      snornaId: location.snoRna.snornaId,
+      linkedSnornaId: location.snoRna.snornaId,
+      isAvailable: true,
+      boxType: location.snoRna.type,
+      geneLengthNt: location.end - location.start + 1,
+      intergenicLengthNt: null,
+      coordinatesList: [coordinate],
+    });
+    previous = location;
+  }
+
+  res.json({
+    organism: { slug: organism.slug, name: organism.name },
+    clusters,
+  });
+});
+
 snornaRouter.get("/:id", async (req, res) => {
   const item = await prisma.snoRna.findFirst({
     where: { snornaId: req.params.id },

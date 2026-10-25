@@ -56,10 +56,11 @@ export default function BlastPage() {
       <Link href="/" className="text-sm underline">
         Back to tools
       </Link>
-      <h1 className="text-3xl font-bold">BLAST</h1>
+      <h1 className="text-3xl font-bold">sno-BLAST</h1>
       <p className="text-slate-600">
-        Run local BLAST against all FASTA sequences available to the site. Results include NCBI-style pairwise
-        alignments with coordinates on each subject.
+        Run local BLAST against all FASTA sequences available to the site. The search is compared to ribosomal
+        sequences and to snoRNA sequences. Results include NCBI-style pairwise alignments with coordinates on each
+        subject.
       </p>
       <form className="space-y-3" onSubmit={runBlast}>
         <textarea
@@ -70,7 +71,7 @@ export default function BlastPage() {
         />
         <div className="flex gap-3">
           <button disabled={loading} className="rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-60">
-            {loading ? "Running..." : "Run local BLAST search"}
+            {loading ? "Running..." : "Run sno-BLAST search"}
           </button>
           <a
             className="rounded border px-4 py-2"

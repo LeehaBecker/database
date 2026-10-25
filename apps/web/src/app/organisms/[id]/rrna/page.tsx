@@ -14,7 +14,7 @@ export default async function OrganismRrnaPage({ params }: { params: Promise<{ i
       </section>
       <section className="grid gap-4 md:grid-cols-2">
         <Link href={`/organisms/${id}/rrna/sequence`} className="rounded-2xl border border-cyan-200 bg-white p-5 shadow-sm transition hover:bg-cyan-50">
-          <h2 className="text-xl font-semibold text-cyan-900">Sequence</h2>
+          <h2 className="text-xl font-semibold text-cyan-900">rRNA sequence by units</h2>
           <p className="mt-2 text-sm text-slate-600">Subunit map, coordinate table, colored sequence, and FASTA download.</p>
         </Link>
         <Link

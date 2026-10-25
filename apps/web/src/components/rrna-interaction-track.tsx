@@ -39,6 +39,7 @@ type SegmentColumn = {
 type Segment = {
   key: string;
   snornaId: string;
+  boxType: string;
   sitePosition: number;
   start: number;
   end: number;
@@ -111,6 +112,7 @@ function buildSegments(sites: MapSite[]): { segments: Segment[]; laneCount: numb
       raw.push({
         key: `${guide.snornaId}:${site.position}`,
         snornaId: guide.snornaId,
+        boxType: guide.type,
         sitePosition: site.position,
         start: Math.min(...positions),
         end: Math.max(...positions),
@@ -172,6 +174,17 @@ const Ruler = memo(function Ruler({ length }: { length: number }) {
   );
 });
 
+function boxStyles(boxType: string) {
+  const normalized = boxType.toUpperCase();
+  if (normalized.includes("H/ACA")) {
+    return { box: "border-sky-400 bg-sky-100", label: "text-sky-900" };
+  }
+  if (normalized.includes("C/D")) {
+    return { box: "border-emerald-400 bg-emerald-100", label: "text-emerald-900" };
+  }
+  return { box: "border-slate-400 bg-slate-100", label: "text-slate-700" };
+}
+
 const LaneSegment = memo(function LaneSegment({
   segment,
   active,
@@ -181,10 +194,11 @@ const LaneSegment = memo(function LaneSegment({
   active: boolean;
   dimmed: boolean;
 }) {
+  const styles = boxStyles(segment.boxType);
   return (
     <div
-      className={`absolute rounded-sm border transition-opacity ${
-        active ? "border-cyan-500 bg-cyan-50" : "border-sky-100 bg-sky-50/60"
+      className={`absolute rounded-sm border-2 transition-opacity ${styles.box} ${
+        active ? "ring-2 ring-cyan-500" : ""
       } ${dimmed ? "opacity-25" : ""}`}
       style={{
         left: xOf(segment.start),
@@ -194,7 +208,7 @@ const LaneSegment = memo(function LaneSegment({
       }}
       title={segment.title}
     >
-      <span className="absolute left-0.5 top-0 whitespace-nowrap text-[10px] leading-3 text-sky-800">{segment.snornaId}</span>
+      <span className={`absolute left-0.5 top-0 whitespace-nowrap text-[10px] leading-3 ${styles.label}`}>{segment.snornaId}</span>
       {segment.columns.map((column) => (
         <span
           key={column.rrnaPosition}

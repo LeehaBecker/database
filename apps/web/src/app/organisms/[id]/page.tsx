@@ -33,7 +33,7 @@ export default async function OrganismLandingPage({ params }: { params: Promise<
 
       <section className="grid gap-4 md:grid-cols-2">
         <Link href={`/organisms/${id}/snorna`} className="rounded-2xl border border-cyan-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:bg-cyan-50">
-          <h2 className="text-xl font-semibold text-cyan-900">snoRNA Data</h2>
+          <h2 className="text-xl font-semibold text-cyan-900">All snoRNA data</h2>
           <p className="mt-2 text-sm text-slate-600">Browse, filter, sort, and export snoRNA records.</p>
         </Link>
         <Link href={`/organisms/${id}/rrna`} className="rounded-2xl border border-violet-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:bg-violet-50">
@@ -47,6 +47,10 @@ export default async function OrganismLandingPage({ params }: { params: Promise<
         <Link href={`/organisms/${id}/snorna-clusters`} className="rounded-2xl border border-emerald-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-50">
           <h2 className="text-xl font-semibold text-emerald-900">snoRNA Clusters</h2>
           <p className="mt-2 text-sm text-slate-600">Genomic cluster diagrams with linked snoRNA IDs.</p>
+        </Link>
+        <Link href={`/organisms/${id}/snorna-clusters/updated`} className="rounded-2xl border border-emerald-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-50">
+          <h2 className="text-xl font-semibold text-emerald-900">Updated version</h2>
+          <p className="mt-2 text-sm text-slate-600">Clusters rebuilt from genomic coordinates, grouping neighbors within 1 kb.</p>
         </Link>
         {id === "trypanosoma-brucei" && (
           <Link href={`/organisms/${id}/genome-reference`} className="rounded-2xl border border-amber-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:bg-amber-50">

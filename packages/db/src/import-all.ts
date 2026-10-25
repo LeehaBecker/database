@@ -411,12 +411,15 @@ async function main() {
   await prisma.tool.upsert({
     where: { slug: "blast" },
     update: {
-      description: "Run local BLAST against all FASTA sequences in Site-db-data",
+      name: "sno-BLAST",
+      description:
+        "Run local BLAST against all FASTA sequences in Site-db-data. The search is compared to ribosomal sequences and to snoRNA sequences.",
     },
     create: {
       slug: "blast",
-      name: "BLAST",
-      description: "Run local BLAST against all FASTA sequences in Site-db-data",
+      name: "sno-BLAST",
+      description:
+        "Run local BLAST against all FASTA sequences in Site-db-data. The search is compared to ribosomal sequences and to snoRNA sequences.",
       externalUrl:
         "https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&PAGE_TYPE=BlastSearch&LINK_LOC=blasthome",
     },

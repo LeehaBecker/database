@@ -12,8 +12,8 @@ import {
 const CATEGORY_META: Array<{ key: HighlightCategory; label: string; dotClass: string }> = [
   { key: "cBox", label: "C box", dotClass: "bg-teal-500" },
   { key: "dBox", label: "D box", dotClass: "bg-blue-500" },
-  { key: "target1", label: "Target 1", dotClass: "bg-green-500" },
-  { key: "target2", label: "Target 2", dotClass: "bg-red-500" },
+  { key: "target1", label: "Binding site 1", dotClass: "bg-green-500" },
+  { key: "target2", label: "Binding site 2", dotClass: "bg-red-500" },
   { key: "hacaPocket", label: "H/ACA pockets", dotClass: "bg-amber-400" },
   { key: "hacaStem", label: "H/ACA stems", dotClass: "bg-purple-400" },
 ];
