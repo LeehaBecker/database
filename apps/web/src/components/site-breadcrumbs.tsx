@@ -10,7 +10,6 @@ const LABELS: Record<string, string> = {
   rrna: "rRNA",
   chimera: "Chimera",
   "snorna-clusters": "snoRNA Clusters",
-  updated: "Updated version",
   "genome-reference": "Genome Reference",
   "secondary-structure": "Secondary Structure",
   "3d-structure": "3D Structure",

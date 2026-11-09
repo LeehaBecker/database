@@ -169,7 +169,7 @@ async function importChimeraMrnaRows(organismId: string, fileName: string) {
 }
 
 async function importSnornaClusterRows(organismId: string, fileName: string) {
-  const rows = readRowsByExtension(fileName.replace(/\.(csv|xlsx)$/i, ""));
+  const rows = readXlsxSheet(fileName, "upd_sheet2");
   if (!rows.length) return;
 
   let currentClusterId = Number.NaN;
