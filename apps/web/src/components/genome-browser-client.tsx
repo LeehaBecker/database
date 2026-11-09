@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type Chromosome = { name: string; length: number };
 type Feature = {
@@ -34,6 +34,18 @@ const TRACK_OPTIONS = [
 ] as const;
 
 const DEFAULT_TYPES = TRACK_OPTIONS.map((option) => option.type);
+const MIN_WINDOW = 30;
+const SEQUENCE_FETCH_MAX = 2000;
+const FEATURE_SEQUENCE_MAX = 20000;
+const BASE_PX = 8;
+
+const BASE_CLASS: Record<string, string> = {
+  A: "text-green-700",
+  C: "text-blue-700",
+  G: "text-amber-700",
+  T: "text-red-700",
+  U: "text-red-700",
+};
 
 export default function GenomeBrowserClient() {
   const searchParams = useSearchParams();
@@ -46,18 +58,31 @@ export default function GenomeBrowserClient() {
   const [sequence, setSequence] = useState("");
   const [searchHits, setSearchHits] = useState<SearchHit[]>([]);
   const [selected, setSelected] = useState<Feature | null>(null);
+  const [featureSequence, setFeatureSequence] = useState("");
+  const [featureSequenceNote, setFeatureSequenceNote] = useState("");
   const [visibleTypes, setVisibleTypes] = useState<string[]>([...DEFAULT_TYPES]);
+  const [trackWidth, setTrackWidth] = useState(800);
+  const [selection, setSelection] = useState<{ left: number; width: number } | null>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ x: number } | null>(null);
 
   const loadWindow = async (nextChrom: string, nextStart: number, nextEnd: number, searchTerm = search, types = visibleTypes) => {
-    const [featuresRes, sequenceRes] = await Promise.all([
-      fetch(
-        `${API_BASE}/tools/genome-browser/features?chrom=${encodeURIComponent(nextChrom)}&start=${nextStart}&end=${nextEnd}&search=${encodeURIComponent(searchTerm)}&types=${encodeURIComponent(types.join(","))}`,
-      ),
-      fetch(`${API_BASE}/tools/genome-browser/sequence?chrom=${encodeURIComponent(nextChrom)}&start=${nextStart}&end=${nextEnd}`),
-    ]);
+    const span = Math.max(nextEnd - nextStart + 1, 1);
+    const featuresPromise = fetch(
+      `${API_BASE}/tools/genome-browser/features?chrom=${encodeURIComponent(nextChrom)}&start=${nextStart}&end=${nextEnd}&search=${encodeURIComponent(searchTerm)}&types=${encodeURIComponent(types.join(","))}`,
+    );
+    const sequencePromise =
+      span <= SEQUENCE_FETCH_MAX
+        ? fetch(`${API_BASE}/tools/genome-browser/sequence?chrom=${encodeURIComponent(nextChrom)}&start=${nextStart}&end=${nextEnd}`)
+        : null;
+    const [featuresRes, sequenceRes] = await Promise.all([featuresPromise, sequencePromise]);
     const featuresPayload = await featuresRes.json();
-    const sequencePayload = await sequenceRes.json();
     setFeatures(featuresPayload.items ?? []);
+    if (!sequenceRes) {
+      setSequence("");
+      return;
+    }
+    const sequencePayload = await sequenceRes.json();
     setSequence(sequencePayload.sequence ?? "");
   };
 
@@ -97,18 +122,69 @@ export default function GenomeBrowserClient() {
     [start, windowSize],
   );
   const tracks = useMemo(() => {
-    const base = { gene: 0, transcript: 1, exon: 2, CDS: 3, snoRNA: 4 } as Record<string, number>;
-    return features.map((feature) => {
+    const laneOrder = TRACK_OPTIONS.map((option) => option.type).filter((type) => visibleTypes.includes(type));
+    const lanes = laneOrder.length > 0 ? laneOrder : ["gene"];
+    const placed: Array<Feature & { left: number; width: number; lane: number }> = [];
+    for (const feature of features) {
+      const lane = lanes.indexOf(feature.type as (typeof lanes)[number]);
+      if (lane < 0) continue;
       const left = ((feature.start - start) / windowSize) * 100;
       const width = ((feature.end - feature.start + 1) / windowSize) * 100;
-      return {
+      placed.push({
         ...feature,
         left: Math.max(0, Math.min(left, 100)),
         width: Math.max(0.5, Math.min(width, 100)),
-        lane: base[feature.type] ?? 4,
-      };
-    });
-  }, [features, start, windowSize]);
+        lane,
+      });
+    }
+    return { placed, laneCount: lanes.length };
+  }, [features, start, windowSize, visibleTypes]);
+
+  const selectFeature = async (feature: Feature) => {
+    setSelected(feature);
+    const length = feature.end - feature.start + 1;
+    const fetchEnd = feature.start + Math.min(length, FEATURE_SEQUENCE_MAX) - 1;
+    const response = await fetch(
+      `${API_BASE}/tools/genome-browser/sequence?chrom=${encodeURIComponent(feature.seqid)}&start=${feature.start}&end=${fetchEnd}`,
+    );
+    const payload = await response.json();
+    setFeatureSequence(payload.sequence ?? "");
+    setFeatureSequenceNote(
+      length > FEATURE_SEQUENCE_MAX
+        ? `Showing the first ${FEATURE_SEQUENCE_MAX.toLocaleString()} nt of ${length.toLocaleString()}.`
+        : "",
+    );
+  };
+
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => setTrackWidth(el.clientWidth));
+    observer.observe(el);
+    setTrackWidth(el.clientWidth);
+    return () => observer.disconnect();
+  }, []);
+
+  const showBases = sequence.length > 0 && trackWidth / windowSize >= BASE_PX;
+
+  const applyWindow = async (nextStart: number, nextEnd: number, nextChrom = chrom) => {
+    const selectedChrom = chromosomes.find((item) => item.name === nextChrom);
+    if (!selectedChrom) return;
+    let startPos = Math.max(1, nextStart);
+    let endPos = Math.min(selectedChrom.length, nextEnd);
+    if (endPos < startPos) endPos = startPos;
+    let size = endPos - startPos + 1;
+    if (size < MIN_WINDOW) {
+      const center = Math.floor((startPos + endPos) / 2);
+      startPos = Math.max(1, center - Math.floor(MIN_WINDOW / 2));
+      endPos = Math.min(selectedChrom.length, startPos + MIN_WINDOW - 1);
+      startPos = Math.max(1, endPos - MIN_WINDOW + 1);
+    }
+    setChrom(nextChrom);
+    setStart(startPos);
+    setEnd(endPos);
+    await loadWindow(nextChrom, startPos, endPos);
+  };
 
   const onSearch = async (event: FormEvent) => {
     event.preventDefault();
@@ -139,12 +215,62 @@ export default function GenomeBrowserClient() {
     const selectedChrom = chromosomes.find((item) => item.name === chrom);
     if (!selectedChrom) return;
     const center = Math.floor((start + end) / 2);
-    const nextSize = Math.max(200, Math.min(selectedChrom.length, Math.floor(windowSize * factor)));
+    const nextSize = Math.max(MIN_WINDOW, Math.min(selectedChrom.length, Math.floor(windowSize * factor)));
     const nextStart = Math.max(1, center - Math.floor(nextSize / 2));
     const nextEnd = Math.min(selectedChrom.length, nextStart + nextSize - 1);
-    setStart(nextStart);
-    setEnd(nextEnd);
-    await loadWindow(chrom, nextStart, nextEnd);
+    await applyWindow(nextStart, nextEnd);
+  };
+
+  const pointerX = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    return Math.max(0, Math.min(event.clientX - rect.left, rect.width));
+  };
+
+  const featureIndexAt = (clientX: number, clientY: number) => {
+    const hit = document.elementFromPoint(clientX, clientY)?.closest("[data-feature-index]");
+    if (!hit) return null;
+    const index = Number(hit.getAttribute("data-feature-index"));
+    return Number.isInteger(index) ? index : null;
+  };
+
+  const onTrackPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    if (featureIndexAt(event.clientX, event.clientY) != null) return;
+    dragRef.current = { x: pointerX(event) };
+    setSelection({ left: dragRef.current.x, width: 0 });
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const onTrackPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current) return;
+    const x = pointerX(event);
+    const left = Math.min(dragRef.current.x, x);
+    setSelection({ left, width: Math.abs(x - dragRef.current.x) });
+  };
+
+  const onTrackPointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const origin = dragRef.current;
+    dragRef.current = null;
+    setSelection(null);
+    const index = featureIndexAt(event.clientX, event.clientY);
+    if (!origin) {
+      const feature = index == null ? undefined : tracks.placed[index];
+      if (feature) void selectFeature(feature);
+      return;
+    }
+    const widthPx = Math.abs(pointerX(event) - origin.x);
+    if (widthPx < 6) {
+      const feature = index == null ? undefined : tracks.placed[index];
+      if (feature) void selectFeature(feature);
+      return;
+    }
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const left = Math.min(origin.x, pointerX(event));
+    const right = left + widthPx;
+    const gStart = start + Math.floor((left / rect.width) * windowSize);
+    const gEnd = start + Math.ceil((right / rect.width) * windowSize) - 1;
+    void applyWindow(gStart, gEnd);
   };
 
   return (
@@ -191,10 +317,26 @@ export default function GenomeBrowserClient() {
 
       <div className="flex flex-wrap gap-2">
         <button onClick={() => void zoom(0.5)} className="rounded border px-3 py-1.5 text-sm">
-          Zoom In
+          Zoom in 2×
+        </button>
+        <button onClick={() => void zoom(0.1)} className="rounded border px-3 py-1.5 text-sm">
+          Zoom in 10×
         </button>
         <button onClick={() => void zoom(2)} className="rounded border px-3 py-1.5 text-sm">
-          Zoom Out
+          Zoom out 2×
+        </button>
+        <button onClick={() => void zoom(10)} className="rounded border px-3 py-1.5 text-sm">
+          Zoom out 10×
+        </button>
+        <button
+          onClick={() => {
+            const selectedChrom = chromosomes.find((item) => item.name === chrom);
+            if (!selectedChrom) return;
+            void applyWindow(1, selectedChrom.length);
+          }}
+          className="rounded border px-3 py-1.5 text-sm"
+        >
+          Full chromosome
         </button>
         <button
           onClick={() => {
@@ -238,9 +380,10 @@ export default function GenomeBrowserClient() {
             </label>
           ))}
         </div>
-        <p className="mb-2 text-sm text-slate-600">
+        <p className="mb-1 text-sm text-slate-600">
           Coordinates: {chrom}:{start}-{end} ({windowSize.toLocaleString()} nt)
         </p>
+        <p className="mb-2 text-xs text-slate-500">Drag across the tracks to zoom to that region.</p>
         <div className="relative mb-2 h-8 rounded border bg-slate-50">
           {rulerTicks.map((tick) => (
             <div key={tick.left} className="absolute top-0 h-full" style={{ left: `${tick.left}%` }}>
@@ -249,13 +392,37 @@ export default function GenomeBrowserClient() {
             </div>
           ))}
         </div>
-        <div className="relative h-72 overflow-hidden rounded border bg-slate-50">
-          {[0, 1, 2, 3, 4].map((lane) => (
-            <div key={lane} className="absolute left-0 right-0 border-t border-dashed border-slate-200" style={{ top: `${lane * 20 + 16}%` }} />
+        {showBases ? (
+          <div className="relative mb-2 h-6 overflow-hidden rounded border bg-white font-mono text-[11px] leading-6">
+            {sequence.split("").map((base, index) => (
+              <span
+                key={`${start}-${index}`}
+                className={`absolute top-0 text-center font-semibold ${BASE_CLASS[base.toUpperCase()] ?? "text-slate-600"}`}
+                style={{ left: `${(index / windowSize) * 100}%`, width: `${(1 / windowSize) * 100}%` }}
+              >
+                {base.toUpperCase()}
+              </span>
+            ))}
+          </div>
+        ) : null}
+        <div className="relative h-72 cursor-crosshair select-none overflow-hidden rounded border bg-slate-50">
+        <div
+          ref={trackRef}
+          className="relative h-full"
+          onPointerDown={onTrackPointerDown}
+          onPointerMove={onTrackPointerMove}
+          onPointerUp={onTrackPointerUp}
+        >
+          {Array.from({ length: tracks.laneCount }, (_, lane) => (
+            <div
+              key={lane}
+              className="pointer-events-none absolute left-0 right-0 border-t border-dashed border-slate-200"
+              style={{ top: `${(lane / tracks.laneCount) * 100}%` }}
+            />
           ))}
-          {tracks.map((feature, index) => (
+          {tracks.placed.map((feature, index) => (
             <button
-              key={`${feature.seqid}-${feature.start}-${feature.end}-${index}`}
+              key={`${feature.seqid}-${feature.type}-${feature.start}-${feature.end}-${index}`}
               className={`absolute h-6 rounded px-1 text-[10px] text-white ${
                 feature.type === "gene"
                   ? "bg-cyan-600"
@@ -269,8 +436,16 @@ export default function GenomeBrowserClient() {
                           ? "bg-amber-600"
                           : "bg-slate-600"
               }`}
-              style={{ left: `${feature.left}%`, width: `${feature.width}%`, top: `${feature.lane * 20 + 12}%` }}
-              onClick={() => setSelected(feature)}
+              style={{
+                left: `${feature.left}%`,
+                width: `${feature.width}%`,
+                top: `calc(${(feature.lane / tracks.laneCount) * 100}% + 6px)`,
+              }}
+              data-feature-index={index}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={() => {
+                void selectFeature(feature);
+              }}
               title={`${feature.type}: ${feature.attributes.gene_id ?? feature.attributes.transcript_id ?? ""} (${feature.strand})`}
             >
               {feature.width > 5
@@ -278,6 +453,13 @@ export default function GenomeBrowserClient() {
                 : ""}
             </button>
           ))}
+          {selection && selection.width > 0 ? (
+            <div
+              className="pointer-events-none absolute top-0 h-full bg-sky-400/30"
+              style={{ left: selection.left, width: selection.width }}
+            />
+          ) : null}
+        </div>
         </div>
       </section>
 
@@ -313,9 +495,19 @@ export default function GenomeBrowserClient() {
         </article>
 
         <article className="rounded-xl border bg-white p-4">
-          <h2 className="mb-2 font-semibold">Sequence in current window</h2>
+          <h2 className="mb-2 font-semibold">
+            {selected
+              ? `Sequence of ${selected.type} ${selected.seqid}:${selected.start}-${selected.end}`
+              : "Sequence in current window"}
+          </h2>
+          {featureSequenceNote ? <p className="mb-2 text-xs text-slate-500">{featureSequenceNote}</p> : null}
           <pre className="max-h-72 overflow-auto rounded bg-slate-100 p-3 text-xs whitespace-pre-wrap break-all">
-            {sequence || "No sequence loaded"}
+            {selected
+              ? featureSequence || "No sequence loaded"
+              : sequence ||
+                (windowSize > SEQUENCE_FETCH_MAX
+                  ? "Window is too wide to show bases. Zoom in to 2,000 nt or less, or click an annotation."
+                  : "No sequence loaded")}
           </pre>
         </article>
       </section>

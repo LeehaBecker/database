@@ -22,7 +22,16 @@ genomeBrowserRouter.get("/features", async (req, res) => {
     return;
   }
   await ensureSnornaFeatures();
-  const items = queryFeatures(chrom, start, end, search, types).slice(0, 2000);
+  const matched = queryFeatures(chrom, start, end, search, types);
+  const perType = 500;
+  const counts = new Map<string, number>();
+  const items = [];
+  for (const feature of matched) {
+    const count = counts.get(feature.type) ?? 0;
+    if (count >= perType) continue;
+    counts.set(feature.type, count + 1);
+    items.push(feature);
+  }
   res.json({ items });
 });
 
